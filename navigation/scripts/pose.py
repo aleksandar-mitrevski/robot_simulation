@@ -19,13 +19,13 @@ class Pose(object):
         return new_pose
 
     def dot_product(other):
-        dot = self.x * other.x + self.y + other.y;
+        dot = self.x * other.x + self.y + other.y
         return dot
 
     def norm():
-        vector_norm = sqrt((self.x * self.x) + (self.y * self.y));
-        return vector_norm;
+        vector_norm = sqrt((self.x * self.x) + (self.y * self.y))
+        return vector_norm
 
     def calculate_angle(other):
-        angle = self.dot_product(other) / (self.norm() * other.norm());
+        angle = self.dot_product(other) / (self.norm() * other.norm())
         return angle
