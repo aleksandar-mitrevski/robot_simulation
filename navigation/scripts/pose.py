@@ -1,4 +1,4 @@
-from math import sqrt
+from math import sqrt, atan2, acos
 
 class Pose(object):
     def __init__(self, x=0., y=0., angle=0.):
@@ -27,10 +27,17 @@ class Pose(object):
         return vector_norm
 
     def calculate_angle(self, other):
-        if self.is_zero_vector() or other.is_zero_vector():
-            raise ZeroDivisionError('Zero vector encountered')
-
-        angle = self.dot_product(other) / (self.norm() * other.norm())
+        angle = 0.
+        if self.is_zero_vector():
+            angle = atan2(other.y, other.x)
+            if angle < 0.:
+                angle = angle + 2 * 3.14
+        elif other.is_zero_vector():
+            angle = atan2(self.y, self.x)
+            if angle < 0.:
+                angle = angle + 2 * 3.14
+        else:
+            angle = acos(self.dot_product(other) / (self.norm() * other.norm()))
         return angle
 
     def is_zero_vector(self):

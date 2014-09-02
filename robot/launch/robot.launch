@@ -1,0 +1,14 @@
+<!--<launch>
+    <node pkg="visualiser" type="robot" required="True" name="visualiser" />
+</launch>-->
+
+<launch>
+    <param name="robot_description" textfile="$(find visualiser)/robot_models/four_wheel.urdf" />
+
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
+    <node name="rviz" pkg="rviz" type="rviz" required="true" />
+    <node pkg="robot_state_publisher" name="robot_state_publisher" type="state_publisher">
+        <param name="publish_frequency" value="60"/>
+    </node>
+    <node name="robot_node" pkg="robot" type="robot_node.py" />
+</launch>
