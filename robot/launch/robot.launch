@@ -10,5 +10,5 @@
     <node pkg="robot_state_publisher" name="robot_state_publisher" type="state_publisher">
         <param name="publish_frequency" value="60"/>
     </node>
-    <node name="robot_node" pkg="robot" type="robot_node.py" />
+    <node name="motion_controller_node" pkg="navigation" type="motion_controller_node.py" />
 </launch>

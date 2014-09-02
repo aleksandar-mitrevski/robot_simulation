@@ -10,40 +10,60 @@ from math import atan2
 
 class MotionControllerNode(object):
     def __init__(self):
+        self.x = 0.
+        self.y = 0.
+        self.heading = 0.
+
+        self.velocity_linear = 0.01
+        self.velocity_angular = 0.01
+
+        self.tf_broadcaster = tf.TransformBroadcaster()
+        self.tf_broadcaster.sendTransform((0.,0.,0.),(0.,0.,0.,1.), rospy.Time.now(), "base_link", "odom")
+
         self.velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=5)
         rospy.Subscriber('move_base_simple/goal', PoseStamped, self.move_to_goal_callback)
+
+        while not rospy.is_shutdown():
+            self.publish_transform()
 
     def move_to_goal_callback(self, goal):
         goal_reached = False
         goal_pose = Pose(goal.pose.position.x, goal.pose.position.y, goal.pose.orientation.z)
-        motion_controller = MotionController(Velocity(0.01, 0.01, 0.01))
+        motion_controller = MotionController(Velocity(self.velocity_linear, self.velocity_linear, self.velocity_angular))
 
-        listener = tf.TransformListener()
-        listener.waitForTransform("/odom", "/base_link", rospy.Time(), rospy.Duration(10.0))
         rospy.loginfo('Goal pose: ' + str(goal_pose.x) + ' ' + str(goal_pose.y) + ' ' + str(goal_pose.angle))
         while not goal_reached:
-            try:
-                (translation, rotation_quaternion) = listener.lookupTransform('/odom', '/base_link', rospy.Time(0))
-                rotation_euler = tf.transformations.euler_from_quaternion(rotation_quaternion)
-            except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-                return
-
-            current_pose = Pose(translation[0], translation[1], rotation_euler[2])
+            current_pose = Pose(self.x, self.y, self.heading)
             velocity, goal_reached = motion_controller.calculate_velocity(current_pose, goal_pose)
             self.publish_velocity(velocity)
+            self.publish_transform(velocity)
             rospy.sleep(0.1)
         rospy.loginfo('Goal reached')
 
     def publish_velocity(self, velocity):
         velocity_msg = Twist()
         velocity_msg.linear.x = velocity.linear_x
-        velocity_msg.linear.y = velocity.linear_y
+        velocity_msg.linear.y = 0.
         velocity_msg.angular.z = velocity.angular
         self.velocity_publisher.publish(velocity_msg)
+
+    def publish_transform(self, velocity=None):
+        linear_x_velocity = 0.
+        linear_y_velocity = 0.
+        angular_velocity = 0.
+
+        if velocity != None:
+            linear_x_velocity = velocity.linear_x
+            linear_y_velocity = velocity.linear_y
+            angular_velocity = velocity.angular
+
+        self.x = self.x + linear_x_velocity
+        self.y = self.y + linear_y_velocity
+        self.heading = self.heading + angular_velocity
+        self.tf_broadcaster.sendTransform((self.x, self.y, 0.), tf.transformations.quaternion_from_euler(0, 0, self.heading), rospy.Time.now(), "base_link", "odom")
 
 if __name__ == '__main__':
     rospy.init_node('motion_controller')
     try:
         MotionControllerNode()
-        rospy.spin()
     except rospy.ROSInterruptException: pass
