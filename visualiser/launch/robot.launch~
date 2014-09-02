@@ -1,3 +1,0 @@
-<launch>
-    <node pkg="visualiser" type="robot" required="True" name="visualiser" />
-</launch>
