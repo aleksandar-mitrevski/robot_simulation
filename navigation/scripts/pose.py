@@ -27,6 +27,8 @@ class Pose(object):
         return vector_norm
 
     def calculate_angle(self, other):
+        '''Calculates the angle between 'self' and 'other'.        
+        '''
         angle = 0.
         if self.is_zero_vector():
             angle = atan2(other.y, other.x)

@@ -1,6 +1,5 @@
 from math import cos, sin, atan2, copysign
 from velocity import Velocity
-import rospy
 
 class MotionController(object):
     def __init__(self, velocity=None):
@@ -9,6 +8,19 @@ class MotionController(object):
         self.goal_location_reached = False
 
     def calculate_velocity(self, current_pose, goal):
+        '''Calculates appropriate linear and angular velocities
+        for moving from 'current_pose' to 'goal'. Supposes that the moving agent
+        is as a differential drive, so first turns towards the goal location,
+        then moves towards it, and finally rotates in order to reach the desired heading.
+
+        Keyword arguments:
+        current_pose -- A 'Pose' object describing the current pose of the moving agent.
+        goal -- 'A' pose object describing the goal pose.
+
+        Returns:
+        velocity -- A 'Velocity' object with the calculated linear and angular velocities.
+
+        '''
         goal_reached = False
         velocity = Velocity()
 
@@ -44,12 +56,16 @@ class MotionController(object):
         return velocity, goal_reached
 
     def smallest_angle(self, angle1, angle2):
+        '''Calculates the smallest (signed) angle from 'angle1' and 'angle2'.
+        '''
         diff = angle1 - angle2
         if abs(diff) > 3.14:
             diff = diff - copysign(2*3.14, diff)
         return -diff
 
     def normalise_angle(self, angle):
+        '''Converts 'angle' to the range (0,2*pi).
+        '''
         if angle < 0.:
             angle = angle + 2 * 3.14
         return angle
