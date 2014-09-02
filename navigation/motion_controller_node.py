@@ -31,6 +31,7 @@ class MotionControllerNode(object):
             current_pose = Pose(translation[0], translation[1], rotation_euler[2])
             velocity, goal_reached = motion_controller.calculate_velocity(current_pose, goal_pose)
             self.publish_velocity(velocity)
+            rospy.sleep(0.1)
         rospy.loginfo('Goal reached')
 
     def publish_velocity(self, velocity):
