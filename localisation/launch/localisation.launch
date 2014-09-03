@@ -1,0 +1,3 @@
+<launch>
+    <node name="localisation_node" pkg="localisation" type="localisation_node.py" />
+</launch>

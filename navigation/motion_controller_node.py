@@ -6,7 +6,6 @@ from geometry_msgs.msg import Twist, PoseStamped
 from scripts.motion_controller import MotionController
 from scripts.pose import Pose
 from scripts.velocity import Velocity
-from math import atan2
 
 class MotionControllerNode(object):
     def __init__(self):

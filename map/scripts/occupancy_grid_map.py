@@ -1,7 +1,7 @@
 import numpy as np
 from coordinates import Coordinates
 
-class OccupancyGrid(object):
+class OccupancyGridMap(object):
     def __init__(self, width=10., height=10., resolution=0.1):
         '''Initialises an occupancy grid map with x coordinates in the range
         (-width/2,width/2) and y coordinates in the range (-height/2,height/2).
@@ -14,10 +14,17 @@ class OccupancyGrid(object):
         '''
         self.rows = int(round(height / resolution))
         self.columns = int(round(width / resolution))
+        self.resolution = resolution
         self.occupancy_grid = np.zeros((self.rows, self.columns))
 
         self.x_boundaries = (-width/2., width/2.)
         self.y_boundaries = (-height/2., height/2.)
+
+    def get_map(self):
+        return np.array(self.occupancy_grid)
+
+    def get_map_origin(self):
+        return Coordinates(self.x_boundaries[0] + self.resolution/2., self.y_boundaries[0] + self.resolution / 2.)
 
     def map_to_world_coordinates(self, row_index, column_index):
         '''Converts the given map coordinates to world coordinates
@@ -30,8 +37,8 @@ class OccupancyGrid(object):
         '''
         if self.invalid_indices(row_index, column_index):
             raise ValueError('OccupancyGrid: Invalid coordinates')
-        x = (x_boundaries[0] + resolution / 2.) + column_index * resolution
-        y = (y_boundaries[0] + resolution / 2.) + row_index * resolution
+        x = (self.x_boundaries[0] + self.resolution / 2.) + column_index * self.resolution
+        y = (self.y_boundaries[0] + self.resolution / 2.) + row_index * self.resolution
         return Coordinates(x, y)
 
     def world_to_map_coordinates(self, x, y):
@@ -44,8 +51,8 @@ class OccupancyGrid(object):
         '''
         if self.invalid_coordinates(x, y):
             raise ValueError('OccupancyGrid: Invalid coordinates')
-        column = int((x - x_boundaries[0]) / resolution)
-        row = int((y - y_boundaries[0]) / resolution)
+        column = int((x - self.x_boundaries[0]) / self.resolution)
+        row = int((y - self.y_boundaries[0]) / self.resolution)
         return Coordinates(row, column)
 
     def invalid_indices(self, row_index, column_index):

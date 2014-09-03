@@ -4,7 +4,7 @@
   <!-- Base link -->
   <link name="base_link">
     <visual>
-      <origin xyz="0 0 0" rpy="0 0 0" />
+      <origin xyz="0 0 0.195" rpy="0 0 0" />
       <geometry>
           <box size="1 0.5 0.25"/>
       </geometry>
@@ -16,7 +16,7 @@
   <!-- Front Right Wheel -->
   <link name="f_r_wheel">
     <visual>
-      <origin xyz="0 0 0" rpy="1.570795 0 0" />
+      <origin xyz="0 0 0.195" rpy="1.570795 0 0" />
       <geometry>
           <cylinder length="0.1" radius="0.2" />
       </geometry>
@@ -34,7 +34,7 @@
   <!-- Back Right Wheel -->
   <link name="b_r_wheel">
     <visual>
-      <origin xyz="0 0 0" rpy="1.570795 0 0" />
+      <origin xyz="0 0 0.195" rpy="1.570795 0 0" />
       <geometry>
           <cylinder length="0.1" radius="0.2" />
       </geometry>
@@ -50,7 +50,7 @@
   <!-- Front Left Wheel -->
   <link name="f_l_wheel">
     <visual>
-      <origin xyz="0 0 0" rpy="1.570795 0 0" />
+      <origin xyz="0 0 0.195" rpy="1.570795 0 0" />
       <geometry>
           <cylinder length="0.1" radius="0.2" />
       </geometry>
@@ -66,7 +66,7 @@
   <!-- Back Left Wheel -->
   <link name="b_l_wheel">
     <visual>
-      <origin xyz="0 0 0" rpy="1.570795 0 0" />
+      <origin xyz="0 0 0.195" rpy="1.570795 0 0" />
       <geometry>
           <cylinder length="0.1" radius="0.2" />
       </geometry>
@@ -82,7 +82,7 @@
   <!-- Laser scanner -->
   <link name="laser_scanner">
     <visual>
-      <origin xyz="0 0 0" rpy="0.0 0 0" />
+      <origin xyz="0 0 0.195" rpy="0.0 0 0" />
       <geometry>
           <box size="0.1 0.2 0.1"/>
       </geometry>
