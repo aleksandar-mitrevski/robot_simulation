@@ -14,8 +14,8 @@ class MotionControllerNode(object):
         self.y = 0.
         self.heading = 0.
 
-        self.velocity_linear = 0.01
-        self.velocity_angular = 0.01
+        self.velocity_linear = float(rospy.get_param('linear_velocity', '0.01'))
+        self.velocity_angular = float(rospy.get_param('angular_velocity', '0.01'))
 
         self.tf_broadcaster = tf.TransformBroadcaster()
         self.tf_broadcaster.sendTransform((0.,0.,0.),(0.,0.,0.,1.), rospy.Time.now(), "base_link", "odom")
@@ -28,7 +28,11 @@ class MotionControllerNode(object):
 
     def move_to_goal_callback(self, goal):
         goal_reached = False
-        goal_pose = Pose(goal.pose.position.x, goal.pose.position.y, goal.pose.orientation.z)
+
+        orientation_quaternion = (goal.pose.orientation.x, goal.pose.orientation.y, goal.pose.orientation.z, goal.pose.orientation.w)
+        euler_orientation = tf.transformations.euler_from_quaternion(orientation_quaternion)
+        goal_pose = Pose(goal.pose.position.x, goal.pose.position.y, euler_orientation[2])
+
         motion_controller = MotionController(Velocity(self.velocity_linear, self.velocity_linear, self.velocity_angular))
 
         rospy.loginfo('Goal pose: ' + str(goal_pose.x) + ' ' + str(goal_pose.y) + ' ' + str(goal_pose.angle))

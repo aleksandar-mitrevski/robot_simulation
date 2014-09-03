@@ -27,6 +27,7 @@ class MotionController(object):
         vector_diff = goal - current_pose
 
         current_angle = self.normalise_angle(current_pose.angle)
+        goal_angle = self.normalise_angle(goal.angle)
         diff_vector_direction = self.normalise_angle(atan2(vector_diff.y, vector_diff.x))
         goal_vector_direction = self.normalise_angle(atan2(goal.y, goal.x))
 
@@ -39,12 +40,12 @@ class MotionController(object):
                 velocity = Velocity(linear_x_velocity, linear_y_velocity, 0.)
 
             if self.goal_location_reached:
-                if abs(current_angle - goal_vector_direction) < 0.5:
+                if abs(current_angle - goal_angle) < 1e-2:
+                    goal_reached = True
                     self.facing_goal = False
                     self.goal_location_reached = False
-                    goal_reached = True
                 else:
-                    heading_diff = self.smallest_angle(current_angle, goal_vector_direction)
+                    heading_diff = self.smallest_angle(current_angle, goal_angle)
                     velocity = Velocity(0., 0., copysign(self.velocity.angular, heading_diff))
         else:
             heading_diff = self.smallest_angle(current_angle, diff_vector_direction)

@@ -4,11 +4,13 @@
 
 <launch>
     <param name="robot_description" textfile="$(find visualiser)/robot_models/four_wheel.urdf" />
+    <param name="linear_velocity" type="double" value="0.02" />
+    <param name="angular_velocity" type="double" value="0.02" />
 
     <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
     <node name="rviz" pkg="rviz" type="rviz" required="true" />
     <node pkg="robot_state_publisher" name="robot_state_publisher" type="state_publisher">
         <param name="publish_frequency" value="60"/>
     </node>
-    <node name="motion_controller_node" pkg="navigation" type="motion_controller_node.py" />
+    <node name="motion_controller_node" pkg="navigation" type="motion_controller_node.py" output="screen" />
 </launch>
