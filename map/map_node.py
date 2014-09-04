@@ -11,8 +11,9 @@ class MapNode(object):
         self.map_width = float(rospy.get_param('map_width', '10.0'))
         self.map_height = float(rospy.get_param('map_height', '10.0'))
         self.map_resolution = float(rospy.get_param('map_resolution', '0.1'))
-        self.occupancy_grid = OccupancyGridMap(self.map_width, self.map_height, self.map_resolution)
+        self.map_image_file_name = rospy.get_param('map_image_file_name', None)
 
+        self.occupancy_grid = OccupancyGridMap(self.map_image_file_name, self.map_width, self.map_height, self.map_resolution)
         self.map_publisher = rospy.Publisher('nav_msgs/occupancy_grid', OccupancyGrid, queue_size=5)
 
         while not rospy.is_shutdown():

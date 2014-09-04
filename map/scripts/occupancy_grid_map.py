@@ -1,12 +1,15 @@
 import numpy as np
 from coordinates import Coordinates
 
+import Image
+
 class OccupancyGridMap(object):
-    def __init__(self, width=10., height=10., resolution=0.1):
+    def __init__(self, map_image_file_name=None, width=10., height=10., resolution=0.1):
         '''Initialises an occupancy grid map with x coordinates in the range
         (-width/2,width/2) and y coordinates in the range (-height/2,height/2).
 
         Keyword arguments:
+        map_image_file -- Name of a grayscale image that contains a map (default None, in which case an empty map with unknown fields is created)
         width -- Map width in meters (default 10.)
         height -- Map height in meters (default 10.)
         resolution -- Map resolution in meters (default 0.1)
@@ -15,7 +18,10 @@ class OccupancyGridMap(object):
         self.rows = int(round(height / resolution))
         self.columns = int(round(width / resolution))
         self.resolution = resolution
-        self.occupancy_grid = np.zeros((self.rows, self.columns))
+        self.occupancy_grid = -1. * np.ones((self.rows, self.columns))
+
+        if map_image_file_name != None:
+            self._read_map(map_image_file_name)
 
         self.x_boundaries = (-width/2., width/2.)
         self.y_boundaries = (-height/2., height/2.)
@@ -36,7 +42,7 @@ class OccupancyGridMap(object):
 
         '''
         if self.invalid_indices(row_index, column_index):
-            raise ValueError('OccupancyGrid: Invalid coordinates')
+            raise ValueError('OccupancyGridMap: Invalid coordinates')
         x = (self.x_boundaries[0] + self.resolution / 2.) + column_index * self.resolution
         y = (self.y_boundaries[0] + self.resolution / 2.) + row_index * self.resolution
         return Coordinates(x, y)
@@ -50,7 +56,7 @@ class OccupancyGridMap(object):
 
         '''
         if self.invalid_coordinates(x, y):
-            raise ValueError('OccupancyGrid: Invalid coordinates')
+            raise ValueError('OccupancyGridMap: Invalid coordinates')
         column = int((x - self.x_boundaries[0]) / self.resolution)
         row = int((y - self.y_boundaries[0]) / self.resolution)
         return Coordinates(row, column)
@@ -72,3 +78,14 @@ class OccupancyGridMap(object):
 
         '''
         return x < self.x_boundaries[0] or x > self.x_boundaries[1] or y < self.y_boundaries[0] or y > self.y_boundaries[1]
+
+    def _read_map(self, map_image_file_name):
+        map_size = self.occupancy_grid.shape
+        try:
+            image = Image.open(map_image_file_name).convert('L')
+            pixels = image.resize(map_size).load()
+            for i in xrange(map_size[0]):
+                for j in xrange(map_size[1]):
+                    self.occupancy_grid[i,j] = 100 - int(pixels[i,j] / 255. * 100)
+        except IOError:
+            raise

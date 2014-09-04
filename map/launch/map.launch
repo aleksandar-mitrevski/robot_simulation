@@ -1,7 +1,8 @@
 <launch>
     <node name="map_node" pkg="map" type="map_node.py" />
 
-    <param name="map_width" type="double" value="6.0" />
-    <param name="map_height" type="double" value="6.0" />
+    <param name="map_width" type="double" value="10.0" />
+    <param name="map_height" type="double" value="10.0" />
     <param name="map_resolution" type="double" value="0.1" />
+    <param name="map_image_file_name" type="str" value="$(find visualiser)/maps/simple_map.png" />
 </launch>
