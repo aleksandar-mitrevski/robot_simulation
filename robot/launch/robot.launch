@@ -16,6 +16,7 @@
         <param name="scanner_min_angle" type="double" value="-1.57" />
         <param name="scanner_max_angle" type="double" value="1.57" />
         <param name="scanner_angle_increment" type="double" value="0.1744" />
+        <param name="noise_standard_deviation" type="double" value="0.0001" />
     </node>
 
     <include file="$(find map)/launch/map.launch" />

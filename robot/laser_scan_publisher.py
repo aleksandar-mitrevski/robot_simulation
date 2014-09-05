@@ -20,6 +20,7 @@ class LaserScanNode(object):
         self.scanner_max_range = float(rospy.get_param('~scanner_max_range', '5.0'))
         self.scanner_frequency = float(rospy.get_param('~scanner_frequency', '60'))
         self.scanner_time_increment = float(rospy.get_param('~scanner_time_increment', '0.00009259'))
+        self.noise_standard_deviation = float(rospy.get_param('~noise_standard_deviation', '1.'))
 
         self.scan_publisher = rospy.Publisher('laser_scan', LaserScan, queue_size=100)
         self.laser_frame = '/laser_front'
@@ -70,7 +71,8 @@ class LaserScanNode(object):
         ranges = []
         for i in xrange(self.number_of_readings):
             distance = self.distance(laser_position[0], laser_position[1], obstacle_positions[i,0], obstacle_positions[i,1])
-            ranges.append(distance)
+            distance_with_noise = self.noise_standard_deviation * np.random.randn() + distance
+            ranges.append(distance_with_noise)
 
         laser_scan = LaserScan()
         laser_scan.header.stamp = rospy.Time.now()
@@ -89,9 +91,8 @@ class LaserScanNode(object):
         return sqrt((point1_x - point2_x) * (point1_x - point2_x) + (point1_y - point2_y) * (point1_y - point2_y))
 
 if __name__ == '__main__':
-    rospy.init_node('laser_scan')
+    rospy.init_node('laser_scan_publisher')
 
     try:
         node = LaserScanNode()
-        rospy.spin()
     except rospy.ROSInterruptException: pass
