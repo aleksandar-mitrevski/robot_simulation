@@ -72,7 +72,10 @@ class LaserScanNode(object):
         for i in xrange(self.number_of_readings):
             distance = self.distance(laser_position[0], laser_position[1], obstacle_positions[i,0], obstacle_positions[i,1])
             distance_with_noise = self.noise_standard_deviation * np.random.randn() + distance
-            ranges.append(distance_with_noise)
+            if distance_with_noise < self.scanner_max_range:
+                ranges.append(distance_with_noise)
+            else:
+                ranges.append(self.scanner_max_range)
 
         laser_scan = LaserScan()
         laser_scan.header.stamp = rospy.Time.now()
