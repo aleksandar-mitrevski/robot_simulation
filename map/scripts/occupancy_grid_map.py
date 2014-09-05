@@ -32,6 +32,26 @@ class OccupancyGridMap(object):
     def get_map_origin(self):
         return Coordinates(self.x_boundaries[0] + self.resolution/2., self.y_boundaries[0] + self.resolution / 2.)
 
+    def find_closest_obstacle(self, position, direction):
+        t = 0.
+        t_increment = self.resolution / 10
+        point_position = Coordinates(position.x, position.y)
+        position_inside_map = True
+        obstacle_position = Coordinates()
+
+        while position_inside_map:
+            try:
+                map_coordinates = self.world_to_map_coordinates(point_position.x, point_position.y)
+                if self.occupancy_grid[map_coordinates.x, map_coordinates.y] == 100:
+                    obstacle_position = point_position
+                    break
+                t = t + t_increment
+                point_position = position + direction.multiply(t)
+            except ValueError:
+                position_inside_map = False
+
+        return obstacle_position, position_inside_map
+
     def map_to_world_coordinates(self, row_index, column_index):
         '''Converts the given map coordinates to world coordinates
         by finding the center of the appropriate map cell.

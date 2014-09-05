@@ -6,6 +6,8 @@ from nav_msgs.msg import OccupancyGrid
 from scripts.coordinates import Coordinates
 from scripts.occupancy_grid_map import OccupancyGridMap
 
+from map.srv import PositionOfClosestObstacle, PositionOfClosestObstacleResponse
+
 class MapNode(object):
     def __init__(self):
         self.map_width = float(rospy.get_param('map_width', '10.0'))
@@ -15,6 +17,7 @@ class MapNode(object):
 
         self.occupancy_grid = OccupancyGridMap(self.map_image_file_name, self.map_width, self.map_height, self.map_resolution)
         self.map_publisher = rospy.Publisher('nav_msgs/occupancy_grid', OccupancyGrid, queue_size=5)
+        self.closest_obstacle_service = rospy.Service('position_of_closest_obstacle', PositionOfClosestObstacle, self.find_position_of_closest_obstacle)
 
         while not rospy.is_shutdown():
             self.publish_map()
@@ -35,6 +38,15 @@ class MapNode(object):
         occupancy_grid_message.data = list(self.occupancy_grid.get_map().flatten().astype(int))
 
         self.map_publisher.publish(occupancy_grid_message)
+
+    def find_position_of_closest_obstacle(self, request):
+        position = Coordinates(request.position_x, request.position_y)
+        direction = Coordinates(request.direction_vector_x, request.direction_vector_y)
+        obstacle_position, position_inside_map = self.occupancy_grid.find_closest_obstacle(position, direction)
+        if position_inside_map:
+            return PositionOfClosestObstacleResponse('success', obstacle_position.x, obstacle_position.y)
+        else:
+            return PositionOfClosestObstacleResponse('fail', 0., 0.)
 
 if __name__ == '__main__':
     rospy.init_node('map')
