@@ -11,8 +11,6 @@ class ObstacleFollower(object):
         safe_distance -- Safe distance from the obstacle.
 
         '''
-        velocity = Velocity()
-
         if velocity != None:
             self.velocity = Velocity(velocity.linear_x, velocity.linear_y, velocity.angular)
         else:
@@ -27,18 +25,27 @@ class ObstacleFollower(object):
         safe_diagonal = sensor_measurements[1] > self.safe_distance
         safe_side = sensor_measurements[2] > self.safe_distance
 
-        if not safe_front and not safe_diagonal and not safe_side:
+        velocity = Velocity()
+
+        if not safe_front or (safe_diagonal and safe_side):
             if self.direction == Directions.Counterclockwise:
                 velocity = Velocity(0., 0., -self.velocity.angular)
             else:
                 velocity = Velocity(0., 0., self.velocity.angular)
-        elif not safe_front or (safe_front and safe_diagonal and safe_side):
-            if self.direction == Directions.Counterclockwise:
-                velocity = Velocity(0., 0., self.velocity.angular)
-            else:
-                velocity = Velocity(0., 0., -self.velocity.angular)
+#        elif not safe_diagonal or not safe_side:
+#            if self.direction == Directions.Counterclockwise:
+#                velocity = Velocity(0., 0., self.velocity.angular)
+#            else:
+#                velocity = Velocity(0., 0., -self.velocity.angular)
         else:
             velocity = Velocity(self.velocity.linear_x * cos(heading_angle), self.velocity.linear_y * sin(heading_angle), 0.)
+#        elif not safe_front or (safe_front and safe_diagonal and safe_side):
+#            if self.direction == Directions.Counterclockwise:
+#                velocity = Velocity(0., 0., self.velocity.angular)
+#            else:
+#                velocity = Velocity(0., 0., -self.velocity.angular)
+        #else:
+        #    velocity = Velocity(self.velocity.linear_x * cos(heading_angle), self.velocity.linear_y * sin(heading_angle), 0.)
 
         return velocity
 

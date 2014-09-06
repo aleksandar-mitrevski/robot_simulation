@@ -45,8 +45,7 @@ class MotionController(object):
             if self.goal_location_reached:
                 if abs(current_angle - goal_angle) < 1e-2:
                     goal_reached = True
-                    self.facing_goal = False
-                    self.goal_location_reached = False
+                    self.reset_states()
                 else:
                     heading_diff = self.smallest_angle(current_angle, goal_angle)
                     velocity = Velocity(0., 0., copysign(self.velocity.angular, heading_diff))
@@ -73,3 +72,7 @@ class MotionController(object):
         if angle < 0.:
             angle = angle + 2 * 3.14
         return angle
+
+    def reset_states(self):
+        self.facing_goal = False
+        self.goal_location_reached = False
