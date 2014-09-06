@@ -3,7 +3,10 @@ from velocity import Velocity
 
 class MotionController(object):
     def __init__(self, velocity=None):
-        self.velocity = Velocity(velocity.linear_x, velocity.linear_y, velocity.angular)
+        if velocity != None:
+            self.velocity = Velocity(velocity.linear_x, velocity.linear_y, velocity.angular)
+        else:
+            self.velocity = Velocity()
         self.facing_goal = False
         self.goal_location_reached = False
 
