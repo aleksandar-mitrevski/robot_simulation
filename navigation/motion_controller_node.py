@@ -10,7 +10,8 @@ from scripts.motion_controller import MotionController
 from scripts.obstacle_follower import ObstacleFollower
 from scripts.pose import Pose
 from scripts.velocity import Velocity
-from scripts.directions import Directions
+from scripts.enums import Directions
+from scripts.measurements import SensorMeasurements
 
 class MotionControllerNode(object):
     def __init__(self):
@@ -22,7 +23,7 @@ class MotionControllerNode(object):
         self.velocity_linear = float(rospy.get_param('~linear_velocity', '0.01'))
         self.velocity_angular = float(rospy.get_param('~angular_velocity', '0.01'))
         self.safe_distance = float(rospy.get_param('~obstacle_safe_distance', '0.1'))
-        self.direction = rospy.get_param('~obstacle_following_direction', 'ccw')
+        self.direction = rospy.get_param('~obstacle_following_direction', 'right')
 
         self.tf_broadcaster = tf.TransformBroadcaster()
         self.tf_broadcaster.sendTransform((0.,0.,0.),(0.,0.,0.,1.), rospy.Time.now(), "base_link", "odom")
@@ -49,26 +50,26 @@ class MotionControllerNode(object):
         obstacle_following_start_point = Point(0,0)
         goal_point = Point(goal_pose.x, goal_pose.y)
 
-        rospy.loginfo(self.safe_distance)
         rospy.loginfo('Goal pose: ' + str(goal_pose.x) + ' ' + str(goal_pose.y) + ' ' + str(goal_pose.angle))
         while not goal_reached and not goal_unreachable:
             current_pose = Pose(self.x, self.y, self.heading)
 
             scans = self.map_scans()
             if not obstacle_following:
-                if self.close_to_obstacle(scans):
+                if scans.less_than(self.safe_distance):
                     obstacle_following = True
                     obstacle_following_start_point = Point(self.x, self.y)
                     motion_controller.reset_states()
 
             if obstacle_following:
                 current_point = Point(self.x, self.y)
-                if obstacle_following_start_point.distance(current_point) > 1e-5 and Point.is_collinear(obstacle_following_start_point, goal_point, current_point):
+                #print scans.front, ' ', scans.right_diagonal, ' ', scans.right
+                if obstacle_following_start_point.distance(current_point) > 0.1 and Point.is_collinear(obstacle_following_start_point, goal_point, current_point):
                     obstacle_following = False
                 else:
                     velocity = obstacle_follower.calculate_velocity(current_pose, scans)
-                    print obstacle_follower.velocity.linear_x, ' ', obstacle_follower.velocity.linear_y, ' ', obstacle_follower.velocity.angular
-                    print velocity.linear_x, ' ', velocity.linear_y, ' ', velocity.angular
+                    #print obstacle_follower.velocity.linear_x, ' ', obstacle_follower.velocity.linear_y, ' ', obstacle_follower.velocity.angular
+                    #print velocity.linear_x, ' ', velocity.linear_y, ' ', velocity.angular
             else:
                 velocity, goal_reached = motion_controller.calculate_velocity(current_pose, goal_pose)
 
@@ -81,12 +82,9 @@ class MotionControllerNode(object):
         self.scans = scans
 
     def map_scans(self):
-        front_scan_index = 0
-        left_diagonal_scan_index = 0
-        left_side_scan_index = 0
-        right_diagonal_scan_index = 0
-        right_side_scan_index = 0
+        measurements = SensorMeasurements()
 
+        front_scan_index = 0
         angle = self.scans.angle_min
         while abs(angle) > 1e-2:
             angle = angle + self.scans.angle_increment
@@ -98,19 +96,13 @@ class MotionControllerNode(object):
         left_diagonal_scan_index = (front_scan_index + left_side_scan_index) / 2
         right_diagonal_scan_index = (front_scan_index + right_side_scan_index) / 2
 
-        front_range = self.scans.ranges[front_scan_index]
-        left_diagonal_range = self.scans.ranges[left_diagonal_scan_index]
-        left_side_range = self.scans.ranges[left_side_scan_index]
-        right_diagonal_range = self.scans.ranges[left_diagonal_scan_index]
-        right_side_range = self.scans.ranges[left_side_scan_index]
+        measurements.front = self.scans.ranges[front_scan_index]
+        measurements.left_diagonal = self.scans.ranges[left_diagonal_scan_index]
+        measurements.left = self.scans.ranges[left_side_scan_index]
+        measurements.right_diagonal = self.scans.ranges[left_diagonal_scan_index]
+        measurements.right = self.scans.ranges[left_side_scan_index]
 
-        return [left_side_range, left_diagonal_range, front_range, right_diagonal_range, right_side_range]
-
-    def close_to_obstacle(self, scans):
-        for i in xrange(len(scans)):
-            if scans[i] < self.safe_distance:
-                return True
-        return False
+        return measurements
 
     def publish_velocity(self, velocity):
         velocity_msg = Twist()

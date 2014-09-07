@@ -29,11 +29,12 @@ class LaserScanNode(object):
         self.tf_listener.waitForTransform('/map', self.laser_frame, rospy.Time(0), rospy.Duration(10.))
 
         while not rospy.is_shutdown():
-            laser_position, obstacle_positions = self.read_obstacle_positions()
-            self.publish_scans(laser_position, obstacle_positions)
+            laser_position, laser_heading, obstacle_positions = self.read_obstacle_positions()
+            self.publish_scans(laser_position, laser_heading, obstacle_positions)
 
     def read_obstacle_positions(self):
         laser_position = -1. * np.ones(2)
+        laser_heading = 0.
         laser_obstacle_positions = -1. * np.ones((self.number_of_readings, 2))
 
         try:
@@ -44,8 +45,9 @@ class LaserScanNode(object):
         laser_position[0] = translation[0]
         laser_position[1] = translation[1]
         euler_rotation = tf.transformations.euler_from_quaternion(quat_rotation)
+        laser_heading = euler_rotation[2]
 
-        angle = euler_rotation[2] + self.scanner_min_angle
+        angle = laser_heading - self.scanner_min_angle
         for i in xrange(self.number_of_readings):
             direction_x = cos(angle)
             direction_y = sin(angle)
@@ -58,16 +60,16 @@ class LaserScanNode(object):
                     laser_obstacle_positions[i,0] = result.position_x
                     laser_obstacle_positions[i,1] = result.position_y
                 else:
-                    laser_obstacle_positions[i,0] = self.scanner_max_range
-                    laser_obstacle_positions[i,1] = self.scanner_max_range
+                    laser_obstacle_positions[i,0] = 2 * laser_position[0] + self.scanner_max_range
+                    laser_obstacle_positions[i,1] = 2 * laser_position[1] + self.scanner_max_range
             except rospy.ServiceException, e:
                 rospy.logerr('position_of_closest_obstacle service call failed')
 
-            angle = angle + self.scanner_angle_increment
+            angle = angle - self.scanner_angle_increment
 
-        return laser_position, laser_obstacle_positions
+        return laser_position, laser_heading, laser_obstacle_positions
 
-    def publish_scans(self, laser_position, obstacle_positions):
+    def publish_scans(self, laser_position, laser_heading, obstacle_positions):
         ranges = []
         for i in xrange(self.number_of_readings):
             distance = self.distance(laser_position[0], laser_position[1], obstacle_positions[i,0], obstacle_positions[i,1])

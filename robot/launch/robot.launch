@@ -8,13 +8,13 @@
     </node>
 
     <node name="motion_controller_node" pkg="navigation" type="motion_controller_node.py" output="screen">
-        <param name="linear_velocity" type="double" value="0.05" />
+        <param name="linear_velocity" type="double" value="0.02" />
         <param name="angular_velocity" type="double" value="0.02" />
         <param name="obstacle_safe_distance" type="double" value="0.3" />
     </node>
 
     <node name="laser_scan_publisher" pkg="robot" type="laser_scan_publisher.py" output="screen">
-        <param name="number_of_readings" type="int" value="18" />
+        <param name="number_of_readings" type="int" value="19" />
         <param name="scanner_min_angle" type="double" value="-1.57" />
         <param name="scanner_max_angle" type="double" value="1.57" />
         <param name="scanner_angle_increment" type="double" value="0.1744" />
