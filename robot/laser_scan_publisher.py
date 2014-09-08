@@ -9,6 +9,7 @@ import rospy
 import tf
 from sensor_msgs.msg import LaserScan
 from map.srv import PositionOfClosestObstacle
+from scripts.laser_data import LaserData
 
 class LaserScanNode(object):
     def __init__(self):
@@ -21,58 +22,90 @@ class LaserScanNode(object):
         self.scanner_frequency = float(rospy.get_param('~scanner_frequency', '60'))
         self.scanner_time_increment = float(rospy.get_param('~scanner_time_increment', '0.00009259'))
         self.noise_standard_deviation = float(rospy.get_param('~noise_standard_deviation', '1.'))
+        self.front_laser_frame = rospy.get_param('~front_sensor_frame', '/laser_front')
+        self.back_laser_frame = rospy.get_param('~back_sensor_frame', '/laser_back')
 
         self.scan_publisher = rospy.Publisher('laser_scan', LaserScan, queue_size=100)
-        self.laser_frame = '/laser_front'
 
         self.tf_listener = tf.TransformListener()
-        self.tf_listener.waitForTransform('/map', self.laser_frame, rospy.Time(0), rospy.Duration(10.))
+        self.tf_listener.waitForTransform('/map', self.front_laser_frame, rospy.Time(0), rospy.Duration(10.))
+        self.tf_listener.waitForTransform('/map', self.back_laser_frame, rospy.Time(0), rospy.Duration(10.))
 
         while not rospy.is_shutdown():
-            laser_position, laser_heading, obstacle_positions = self.read_obstacle_positions()
-            self.publish_scans(laser_position, laser_heading, obstacle_positions)
+            front_laser_data, back_laser_data = self.read_laser_data()
+            self.publish_scans(front_laser_data)
+            self.publish_scans(back_laser_data)
 
-    def read_obstacle_positions(self):
-        laser_position = -1. * np.ones(2)
-        laser_heading = 0.
-        laser_obstacle_positions = -1. * np.ones((self.number_of_readings, 2))
+    def read_laser_data(self):
+        front_laser_data = LaserData(self.front_laser_frame)
+        back_laser_data = LaserData(self.back_laser_frame)
+        front_laser_data.obstacle_positions = -1. * np.ones((self.number_of_readings, 2))
+        back_laser_data.obstacle_positions = -1. * np.ones((self.number_of_readings, 2))
 
         try:
-            (translation, quat_rotation) = self.tf_listener.lookupTransform('/map', self.laser_frame, rospy.Time(0))
+            (translation, quat_rotation) = self.tf_listener.lookupTransform('/map', self.front_laser_frame, rospy.Time(0))
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-            return laser_positions, laser_obstacle_positions
+            return front_laser_data, back_laser_data
 
-        laser_position[0] = translation[0]
-        laser_position[1] = translation[1]
+        front_laser_data.laser_position[0] = translation[0]
+        front_laser_data.laser_position[1] = translation[1]
         euler_rotation = tf.transformations.euler_from_quaternion(quat_rotation)
-        laser_heading = euler_rotation[2]
+        front_laser_data.heading = euler_rotation[2]
 
-        angle = laser_heading - self.scanner_min_angle
+        try:
+            (translation, quat_rotation) = self.tf_listener.lookupTransform('/map', self.back_laser_frame, rospy.Time(0))
+        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+            return front_laser_data, back_laser_data
+
+        back_laser_data.laser_position[0] = translation[0]
+        back_laser_data.laser_position[1] = translation[1]
+        euler_rotation = tf.transformations.euler_from_quaternion(quat_rotation)
+        back_laser_data.heading = euler_rotation[2]
+
+        front_angle = front_laser_data.heading - self.scanner_min_angle
+        back_angle = back_laser_data.heading + self.scanner_min_angle
         for i in xrange(self.number_of_readings):
-            direction_x = cos(angle)
-            direction_y = sin(angle)
+            front_direction_x = cos(front_angle)
+            front_direction_y = sin(front_angle)
+
+            back_direction_x = cos(back_angle)
+            back_direction_y = sin(back_angle)
 
             rospy.wait_for_service('position_of_closest_obstacle')
             try:
                 proxy = rospy.ServiceProxy('position_of_closest_obstacle', PositionOfClosestObstacle)
-                result = proxy(laser_position[0], laser_position[1], direction_x, direction_y)
+                result = proxy(front_laser_data.laser_position[0], front_laser_data.laser_position[1], front_direction_x, front_direction_y)
                 if result.success == 'success':
-                    laser_obstacle_positions[i,0] = result.position_x
-                    laser_obstacle_positions[i,1] = result.position_y
+                    front_laser_data.obstacle_positions[i,0] = result.position_x
+                    front_laser_data.obstacle_positions[i,1] = result.position_y
                 else:
-                    laser_obstacle_positions[i,0] = 2 * laser_position[0] + self.scanner_max_range
-                    laser_obstacle_positions[i,1] = 2 * laser_position[1] + self.scanner_max_range
+                    front_laser_data.obstacle_positions[i,0] = 2 * front_laser_data.laser_position[0] + self.scanner_max_range
+                    front_laser_data.obstacle_positions[i,1] = 2 * front_laser_data.laser_position[1] + self.scanner_max_range
             except rospy.ServiceException, e:
                 rospy.logerr('position_of_closest_obstacle service call failed')
 
-            angle = angle - self.scanner_angle_increment
+            rospy.wait_for_service('position_of_closest_obstacle')
+            try:
+                proxy = rospy.ServiceProxy('position_of_closest_obstacle', PositionOfClosestObstacle)
+                result = proxy(back_laser_data.laser_position[0], back_laser_data.laser_position[1], back_direction_x, back_direction_y)
+                if result.success == 'success':
+                    back_laser_data.obstacle_positions[i,0] = result.position_x
+                    back_laser_data.obstacle_positions[i,1] = result.position_y
+                else:
+                    back_laser_data.obstacle_positions[i,0] = 2 * back_laser_data.laser_position[0] + self.scanner_max_range
+                    back_laser_data.obstacle_positions[i,1] = 2 * back_laser_data.laser_position[1] + self.scanner_max_range
+            except rospy.ServiceException, e:
+                rospy.logerr('position_of_closest_obstacle service call failed')
 
-        return laser_position, laser_heading, laser_obstacle_positions
+            front_angle = front_angle - self.scanner_angle_increment
+            back_angle = back_angle + self.scanner_angle_increment
 
-    def publish_scans(self, laser_position, laser_heading, obstacle_positions):
+        return front_laser_data, back_laser_data
+
+    def publish_scans(self, laser_data):
         ranges = []
         for i in xrange(self.number_of_readings):
-            distance = self.distance(laser_position[0], laser_position[1], obstacle_positions[i,0], obstacle_positions[i,1])
+            distance = self.distance(laser_data.laser_position[0], laser_data.laser_position[1], laser_data.obstacle_positions[i,0], laser_data.obstacle_positions[i,1])
             distance_with_noise = self.noise_standard_deviation * np.random.randn() + distance
             if distance_with_noise < self.scanner_max_range:
                 ranges.append(distance_with_noise)
@@ -81,7 +114,7 @@ class LaserScanNode(object):
 
         laser_scan = LaserScan()
         laser_scan.header.stamp = rospy.Time.now()
-        laser_scan.header.frame_id = self.laser_frame
+        laser_scan.header.frame_id = laser_data.frame_id
         laser_scan.angle_min = self.scanner_min_angle
         laser_scan.angle_max = self.scanner_max_angle
         laser_scan.angle_increment = self.scanner_angle_increment

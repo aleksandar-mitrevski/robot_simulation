@@ -13,6 +13,23 @@
       </material>
     </visual>
   </link>
+  <link name="front_marker">
+    <visual>
+      <origin xyz="0 0 0.195" rpy="0 0 0" />
+      <geometry>
+          <box size="0.01 0.5 0.25" />
+      </geometry>
+      <material name="blue">
+        <color rgba="0.05 0.05 1 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="joint_front_marker" type="continuous">
+    <parent link="base_link"/>
+    <child link="front_marker"/>
+    <origin xyz="0.5 0 0" rpy="0 0 0" /> 
+    <axis xyz="0 1 0" rpy="0 0 0" />
+  </joint>
   <!-- Front Right Wheel -->
   <link name="f_r_wheel">
     <visual>
@@ -96,6 +113,25 @@
     <parent link="base_link"/>
     <child link="laser_front"/>
     <origin xyz="0.475 0.0 0.15" rpy="0 0 0" /> 
+    <axis xyz="0 1 0" rpy="0 0 0" />
+  </joint>
+
+  <!-- Laser Back -->
+  <link name="laser_back">
+    <visual>
+      <origin xyz="0 0 0.195" rpy="0.0 0 0" />
+      <geometry>
+          <box size="0.05 0.1 0.05"/>
+      </geometry>
+      <material name="red">
+        <color rgba="0.7 0 0.2 1"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="joint_laser_back" type="continuous">
+    <parent link="base_link"/>
+    <child link="laser_back"/>
+    <origin xyz="-0.475 0.0 0.15" rpy="0 0 3.14" /> 
     <axis xyz="0 1 0" rpy="0 0 0" />
   </joint>
 
