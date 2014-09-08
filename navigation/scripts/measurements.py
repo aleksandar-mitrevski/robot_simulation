@@ -9,4 +9,4 @@ class SensorMeasurements(object):
         self.right = right
 
     def less_than(self, threshold):
-        return self.front < threshold or self.left_diagonal < threshold or self.left < threshold or self.right_diagonal < threshold or self.right < threshold
+        return self.front < threshold

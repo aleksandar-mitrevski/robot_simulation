@@ -18,12 +18,15 @@ class MotionControllerNode(object):
         self.x = 0.
         self.y = 0.
         self.heading = 0.
-        self.scans = None
+        self.front_scans = None
+        self.back_scans = None
 
         self.velocity_linear = float(rospy.get_param('~linear_velocity', '0.01'))
         self.velocity_angular = float(rospy.get_param('~angular_velocity', '0.01'))
         self.safe_distance = float(rospy.get_param('~obstacle_safe_distance', '0.1'))
         self.direction = rospy.get_param('~obstacle_following_direction', 'right')
+        self.front_sensor_frame = rospy.get_param('~front_sensor_frame', '/laser_front')
+        self.back_sensor_frame = rospy.get_param('~back_sensor_frame', '/laser_back')
 
         self.tf_broadcaster = tf.TransformBroadcaster()
         self.tf_broadcaster.sendTransform((0.,0.,0.),(0.,0.,0.,1.), rospy.Time.now(), "base_link", "odom")
@@ -54,53 +57,56 @@ class MotionControllerNode(object):
         while not goal_reached and not goal_unreachable:
             current_pose = Pose(self.x, self.y, self.heading)
 
+            if obstacle_following:
+                current_point = Point(self.x, self.y)
+                if obstacle_following_start_point.distance(current_point) > 0.1 and Point.is_collinear(obstacle_following_start_point, goal_point, current_point):
+                    obstacle_following = False
+                else:
+                    velocity = obstacle_follower.calculate_velocity(current_pose, scans)
+            else:
+                velocity, goal_reached = motion_controller.calculate_velocity(current_pose, goal_pose)
+
             scans = self.map_scans()
             if not obstacle_following:
                 if scans.less_than(self.safe_distance):
                     obstacle_following = True
                     obstacle_following_start_point = Point(self.x, self.y)
                     motion_controller.reset_states()
-
-            if obstacle_following:
-                current_point = Point(self.x, self.y)
-                #print scans.front, ' ', scans.right_diagonal, ' ', scans.right
-                if obstacle_following_start_point.distance(current_point) > 0.1 and Point.is_collinear(obstacle_following_start_point, goal_point, current_point):
-                    obstacle_following = False
-                else:
-                    velocity = obstacle_follower.calculate_velocity(current_pose, scans)
-                    #print obstacle_follower.velocity.linear_x, ' ', obstacle_follower.velocity.linear_y, ' ', obstacle_follower.velocity.angular
-                    #print velocity.linear_x, ' ', velocity.linear_y, ' ', velocity.angular
-            else:
-                velocity, goal_reached = motion_controller.calculate_velocity(current_pose, goal_pose)
+                    velocity = Velocity()
 
             self.publish_velocity(velocity)
             self.publish_transform(velocity)
-            rospy.sleep(0.1)
+            rospy.sleep(0.05)
         rospy.loginfo('Goal reached')
 
     def get_scans(self, scans):
-        self.scans = scans
+        if scans.header.frame_id == self.front_sensor_frame:
+            self.front_scans = scans
+        else:
+            self.back_scans = scans
 
     def map_scans(self):
         measurements = SensorMeasurements()
 
         front_scan_index = 0
-        angle = self.scans.angle_min
+        angle = self.front_scans.angle_min
         while abs(angle) > 1e-2:
-            angle = angle + self.scans.angle_increment
+            angle = angle + self.front_scans.angle_increment
             front_scan_index = front_scan_index + 1
 
         left_side_scan_index = 0
-        right_side_scan_index = len(self.scans.ranges) - 1
+        right_side_scan_index = len(self.front_scans.ranges) - 1
 
-        left_diagonal_scan_index = (front_scan_index + left_side_scan_index) / 2
-        right_diagonal_scan_index = (front_scan_index + right_side_scan_index) / 2
+        left_diagonal_scan_index = (front_scan_index + left_side_scan_index) / 2 - 1
+        right_diagonal_scan_index = (front_scan_index + right_side_scan_index) / 2 + 1
 
-        measurements.front = self.scans.ranges[front_scan_index]
-        measurements.left_diagonal = self.scans.ranges[left_diagonal_scan_index]
-        measurements.left = self.scans.ranges[left_side_scan_index]
-        measurements.right_diagonal = self.scans.ranges[left_diagonal_scan_index]
-        measurements.right = self.scans.ranges[left_side_scan_index]
+        measurements.front = self.front_scans.ranges[front_scan_index]
+        measurements.left_diagonal = self.front_scans.ranges[left_diagonal_scan_index]
+        measurements.left_back_diagonal = self.back_scans.ranges[left_diagonal_scan_index]
+        measurements.left = self.front_scans.ranges[left_side_scan_index]
+        measurements.right_diagonal = self.front_scans.ranges[left_diagonal_scan_index]
+        measurements.right_back_diagonal = self.back_scans.ranges[right_diagonal_scan_index]
+        measurements.right = self.front_scans.ranges[left_side_scan_index]
 
         return measurements
 

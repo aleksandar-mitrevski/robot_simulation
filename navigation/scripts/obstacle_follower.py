@@ -26,15 +26,15 @@ class ObstacleFollower(object):
         back_diagonal = 0.
         side = 0.
 
-        safe_front = measurements.front > 2 * self.safe_distance
+        safe_front = measurements.front > self.safe_distance
         safe_diagonal = False
         safe_back_diagonal = False
         safe_side = False
 
         if self.direction == Directions.Left:
-            safe_diagonal = measurements.left_diagonal > 2 * self.safe_distance
-            safe_back_diagonal = measurements.left_back_diagonal > 2 * self.safe_distance
-            safe_side = measurements.left > 2 * self.safe_distance
+            safe_diagonal = measurements.left_diagonal > self.safe_distance
+            safe_back_diagonal = measurements.left_back_diagonal > self.safe_distance
+            safe_side = measurements.left > self.safe_distance
 
             diagonal = measurements.left_diagonal
             back_diagonal = measurements.left_back_diagonal
@@ -48,11 +48,9 @@ class ObstacleFollower(object):
             back_diagonal = measurements.right_back_diagonal
             side = measurements.right
 
-        print back_diagonal
         velocity = Velocity()
 
         if not safe_front or not safe_diagonal:
-            print 'A'
             if self.direction == Directions.Left:
                 velocity = Velocity(0., 0., self.velocity.angular)
             else:
@@ -61,22 +59,19 @@ class ObstacleFollower(object):
             if back_diagonal < 1.5 * self.safe_distance:
                 velocity = Velocity(self.velocity.linear_x * cos(heading_angle), self.velocity.linear_y * sin(heading_angle), 0.)
             elif side < 1.5 * self.safe_distance:
-                print 'B'
                 if self.direction == Directions.Left:
                     velocity = Velocity(0., 0., self.velocity.angular)
                 else:
                     velocity = Velocity(0., 0., -self.velocity.angular)
-            elif back_diagonal > 1.5 * self.safe_distance and back_diagonal < 2. * self.safe_distance:
+            elif back_diagonal > self.safe_distance and back_diagonal < 1.5 * self.safe_distance:
                 velocity = Velocity(self.velocity.linear_x * cos(heading_angle), self.velocity.linear_y * sin(heading_angle), 0.)
             else:
-                print 'C'
                 if self.direction == Directions.Left:
                     velocity = Velocity(0., 0., -self.velocity.angular)
                 else:
                     velocity = Velocity(0., 0., self.velocity.angular)
 
             if self.tic:
-                print 'D'
                 velocity = Velocity(self.velocity.linear_x * cos(heading_angle), self.velocity.linear_y * sin(heading_angle), 0.)
                 self.tic = False
             else:
