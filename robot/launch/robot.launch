@@ -21,6 +21,10 @@
         <param name="noise_standard_deviation" type="double" value="0.0001" />
     </node>
 
+    <node name="goal_manager" pkg="robot" type="goal_manager.py" output="screen">
+        <param name="goal_file_name" type="str" value="$(find robot)/goal_locations.txt" />
+    </node>
+
     <include file="$(find map)/launch/map.launch" />
     <include file="$(find localisation)/launch/localisation.launch" />
 </launch>

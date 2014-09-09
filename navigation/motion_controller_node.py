@@ -11,6 +11,9 @@ from scripts.velocity import Velocity
 from scripts.enums import Directions
 from scripts.measurements import SensorMeasurements
 
+from navigation.srv import GoToGoalPosition, GoToGoalPositionResponse
+from navigation.msg import GoToGoalResponse
+
 class MotionControllerNode(object):
     def __init__(self):
         self.x = 0.
@@ -32,11 +35,25 @@ class MotionControllerNode(object):
         self.velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=5)
         rospy.Subscriber('move_base_simple/goal', PoseStamped, self.move_to_goal_callback)
         rospy.Subscriber('laser_scan', LaserScan, self.get_scans)
+        self.go_to_goal_service = rospy.Service('go_to_goal', GoToGoalPosition, self.go_to_goal_service_call_handler)
 
         while not rospy.is_shutdown():
             self.publish_transform()
 
     def move_to_goal_callback(self, goal):
+        self.go_to_goals(goal)
+
+    def go_to_goal_service_call_handler(self, request):
+        goal_unreachable = self.go_to_goal(request.pose)
+
+        response = GoToGoalResponse()
+        if goal_unreachable:
+            response.success = False
+        else:
+            response.success = True
+        return response
+
+    def go_to_goal(self, goal):
         goal_reached = False
         goal_unreachable = False
         obstacle_following = False
@@ -75,7 +92,8 @@ class MotionControllerNode(object):
             self.publish_velocity(velocity)
             self.publish_transform(velocity)
             rospy.sleep(0.05)
-        rospy.loginfo('Goal reached')
+
+        return goal_unreachable
 
     def get_scans(self, scans):
         if scans.header.frame_id == self.front_sensor_frame:

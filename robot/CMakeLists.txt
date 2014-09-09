@@ -74,6 +74,7 @@ generate_messages(
   std_msgs
   sensor_msgs
   map
+  navigation
 )
 
 ###################################
