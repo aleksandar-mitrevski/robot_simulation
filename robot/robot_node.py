@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-import roslib
-roslib.load_manifest('robot')
-
 import rospy
 import tf
 from geometry_msgs.msg import Twist

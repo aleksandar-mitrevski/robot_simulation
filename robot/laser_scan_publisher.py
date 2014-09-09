@@ -1,7 +1,4 @@
 #!/usr/bin/env python
-import roslib
-roslib.load_manifest('robot')
-
 from math import sqrt, cos, sin
 import numpy as np
 
@@ -25,7 +22,7 @@ class LaserScanNode(object):
         self.front_laser_frame = rospy.get_param('~front_sensor_frame', '/laser_front')
         self.back_laser_frame = rospy.get_param('~back_sensor_frame', '/laser_back')
 
-        self.scan_publisher = rospy.Publisher('laser_scan', LaserScan, queue_size=100)
+        self.scan_publisher = rospy.Publisher('laser_scan', LaserScan, queue_size=10)
 
         self.tf_listener = tf.TransformListener()
         self.tf_listener.waitForTransform('/map', self.front_laser_frame, rospy.Time(0), rospy.Duration(10.))
