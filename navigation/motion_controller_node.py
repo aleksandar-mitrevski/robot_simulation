@@ -4,11 +4,9 @@ import tf
 from geometry_msgs.msg import Twist, PoseStamped
 from sensor_msgs.msg import LaserScan
 
-from sympy.geometry import Point
-
 from scripts.motion_controller import MotionController
 from scripts.obstacle_follower import ObstacleFollower
-from scripts.pose import Pose
+from scripts.geometry import Pose, Point
 from scripts.velocity import Velocity
 from scripts.enums import Directions
 from scripts.measurements import SensorMeasurements
@@ -59,7 +57,7 @@ class MotionControllerNode(object):
 
             if obstacle_following:
                 current_point = Point(self.x, self.y)
-                if obstacle_following_start_point.distance(current_point) > 0.1 and Point.is_collinear(obstacle_following_start_point, goal_point, current_point):
+                if obstacle_following_start_point.distance(current_point) > 0.5 and Point.collinear(obstacle_following_start_point, goal_point, current_point):
                     obstacle_following = False
                 else:
                     velocity = obstacle_follower.calculate_velocity(current_pose, scans)
