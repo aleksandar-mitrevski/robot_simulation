@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from math import cos, sin
 import numpy as np
 
 import rospy
@@ -37,14 +38,24 @@ class MotionControllerNode(object):
         self.tf_broadcaster = tf.TransformBroadcaster()
         self.tf_broadcaster.sendTransform((0.,0.,0.),(0.,0.,0.,1.), rospy.Time.now(), "base_link", "odom")
 
-        self.velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=5)
         self.map_velocity_publisher = rospy.Publisher('motion_command', Twist, queue_size=5)
         rospy.Subscriber('move_base_simple/goal', PoseStamped, self.move_to_goal_callback)
         rospy.Subscriber('laser_scan', LaserScan, self.get_scans)
+        rospy.Subscriber('cmd_vel', Twist, self.move_robot)
         self.go_to_goal_service = rospy.Service('go_to_goal', GoToGoalPosition, self.go_to_goal_service_call_handler)
 
         while not rospy.is_shutdown():
             self.publish_transform()
+
+    def move_robot(self, velocity):
+        actual_velocity = Velocity()
+        if abs(velocity.linear.x) > 0:
+            actual_velocity.linear_x = velocity.linear.x * cos(self.heading)
+            actual_velocity.linear_y = velocity.linear.x * sin(self.heading)
+        else:
+            actual_velocity.angular = velocity.angular.z
+
+        self.publish_transform(actual_velocity)
 
     def move_to_goal_callback(self, goal):
         self.go_to_goal(goal)
@@ -133,14 +144,12 @@ class MotionControllerNode(object):
         return measurements
 
     def publish_velocity(self, velocity):
+        '''Publishes the actual motion command in terms of the map in case it is being used in a simulation.
+        '''
         velocity_msg = Twist()
         velocity_msg.linear.x = velocity.linear_x
-        velocity_msg.linear.y = 0.
-        velocity_msg.angular.z = velocity.angular
-        self.velocity_publisher.publish(velocity_msg)
-
-        #publish the actual motion command in terms of the map in case it is being used in a simulation
         velocity_msg.linear.y = velocity.linear_y
+        velocity_msg.angular.z = velocity.angular
         self.map_velocity_publisher.publish(velocity_msg)
 
     def publish_transform(self, velocity=None):

@@ -1,0 +1,6 @@
+<launch>
+    <node name="keyboard_teleop_node" pkg="teleop" type="keyboard_teleop.py" output="screen" />
+
+    <param name="linear_velocity" type="double" value="0.05" />
+    <param name="angular_velocity" type="double" value="0.05" />
+</launch>
