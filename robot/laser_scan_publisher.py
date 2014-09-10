@@ -19,14 +19,17 @@ class LaserScanNode(object):
         self.scanner_frequency = float(rospy.get_param('~scanner_frequency', '60'))
         self.scanner_time_increment = float(rospy.get_param('~scanner_time_increment', '0.00009259'))
         self.noise_standard_deviation = float(rospy.get_param('~noise_standard_deviation', '1.'))
-        self.front_laser_frame = rospy.get_param('~front_sensor_frame', '/laser_front')
-        self.back_laser_frame = rospy.get_param('~back_sensor_frame', '/laser_back')
+        self.world_frame = rospy.get_param('~world_frame', '/world')
+        self.actual_front_laser_frame = rospy.get_param('~front_sensor_frame', '/laser_front')
+        self.actual_back_laser_frame = rospy.get_param('~back_sensor_frame', '/laser_back')
+        self.front_laser_frame = rospy.get_param('~front_sensor_frame', '/laser_front_copy')
+        self.back_laser_frame = rospy.get_param('~back_sensor_frame', '/laser_back_copy')
 
         self.scan_publisher = rospy.Publisher('laser_scan', LaserScan, queue_size=10)
 
         self.tf_listener = tf.TransformListener()
-        self.tf_listener.waitForTransform('/map', self.front_laser_frame, rospy.Time(0), rospy.Duration(10.))
-        self.tf_listener.waitForTransform('/map', self.back_laser_frame, rospy.Time(0), rospy.Duration(10.))
+        self.tf_listener.waitForTransform(self.world_frame, self.front_laser_frame, rospy.Time(0), rospy.Duration(10.))
+        self.tf_listener.waitForTransform(self.world_frame, self.back_laser_frame, rospy.Time(0), rospy.Duration(10.))
 
         while not rospy.is_shutdown():
             front_laser_data, back_laser_data = self.read_laser_data()
@@ -34,13 +37,13 @@ class LaserScanNode(object):
             self.publish_scans(back_laser_data)
 
     def read_laser_data(self):
-        front_laser_data = LaserData(self.front_laser_frame)
-        back_laser_data = LaserData(self.back_laser_frame)
+        front_laser_data = LaserData(self.actual_front_laser_frame)
+        back_laser_data = LaserData(self.actual_back_laser_frame)
         front_laser_data.obstacle_positions = -1. * np.ones((self.number_of_readings, 2))
         back_laser_data.obstacle_positions = -1. * np.ones((self.number_of_readings, 2))
 
         try:
-            (translation, quat_rotation) = self.tf_listener.lookupTransform('/map', self.front_laser_frame, rospy.Time(0))
+            (translation, quat_rotation) = self.tf_listener.lookupTransform(self.world_frame, self.front_laser_frame, rospy.Time(0))
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             return front_laser_data, back_laser_data
 
@@ -50,7 +53,7 @@ class LaserScanNode(object):
         front_laser_data.heading = euler_rotation[2]
 
         try:
-            (translation, quat_rotation) = self.tf_listener.lookupTransform('/map', self.back_laser_frame, rospy.Time(0))
+            (translation, quat_rotation) = self.tf_listener.lookupTransform(self.world_frame, self.back_laser_frame, rospy.Time(0))
         except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
             return front_laser_data, back_laser_data
 

@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+import numpy as np
+
 import rospy
 import tf
 from geometry_msgs.msg import Twist, PoseStamped
@@ -24,6 +26,9 @@ class MotionControllerNode(object):
 
         self.velocity_linear = float(rospy.get_param('~linear_velocity', '0.01'))
         self.velocity_angular = float(rospy.get_param('~angular_velocity', '0.01'))
+        self.noise_linear_x = float(rospy.get_param('~noise_linear_x', '0.000001'))
+        self.noise_linear_y = float(rospy.get_param('~noise_linear_y', '0.000001'))
+        self.noise_angular = float(rospy.get_param('~noise_angular', '0.00000001'))
         self.safe_distance = float(rospy.get_param('~obstacle_safe_distance', '0.1'))
         self.direction = rospy.get_param('~obstacle_following_direction', 'right')
         self.front_sensor_frame = rospy.get_param('~front_sensor_frame', '/laser_front')
@@ -33,6 +38,7 @@ class MotionControllerNode(object):
         self.tf_broadcaster.sendTransform((0.,0.,0.),(0.,0.,0.,1.), rospy.Time.now(), "base_link", "odom")
 
         self.velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=5)
+        self.map_velocity_publisher = rospy.Publisher('motion_command', Twist, queue_size=5)
         rospy.Subscriber('move_base_simple/goal', PoseStamped, self.move_to_goal_callback)
         rospy.Subscriber('laser_scan', LaserScan, self.get_scans)
         self.go_to_goal_service = rospy.Service('go_to_goal', GoToGoalPosition, self.go_to_goal_service_call_handler)
@@ -41,7 +47,7 @@ class MotionControllerNode(object):
             self.publish_transform()
 
     def move_to_goal_callback(self, goal):
-        self.go_to_goals(goal)
+        self.go_to_goal(goal)
 
     def go_to_goal_service_call_handler(self, request):
         goal_unreachable = self.go_to_goal(request.pose)
@@ -133,6 +139,10 @@ class MotionControllerNode(object):
         velocity_msg.angular.z = velocity.angular
         self.velocity_publisher.publish(velocity_msg)
 
+        #publish the actual motion command in terms of the map in case it is being used in a simulation
+        velocity_msg.linear.y = velocity.linear_y
+        self.map_velocity_publisher.publish(velocity_msg)
+
     def publish_transform(self, velocity=None):
         linear_x_velocity = 0.
         linear_y_velocity = 0.
@@ -142,6 +152,10 @@ class MotionControllerNode(object):
             linear_x_velocity = velocity.linear_x
             linear_y_velocity = velocity.linear_y
             angular_velocity = velocity.angular
+
+        linear_x_velocity = self.noise_linear_x * np.random.randn() + linear_x_velocity
+        linear_y_velocity = self.noise_linear_y * np.random.randn() + linear_y_velocity
+        angular_velocity = self.noise_angular * np.random.randn() + angular_velocity
 
         self.x = self.x + linear_x_velocity
         self.y = self.y + linear_y_velocity

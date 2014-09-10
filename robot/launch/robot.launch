@@ -1,4 +1,8 @@
 <launch>
+    <!--publish frames for ground truth-->
+    <node pkg="tf" type="static_transform_publisher" name="laser_front_broadcaster" args="0.475 0 0.15 0 0 0 base_link_copy laser_front_copy 1.25" />
+    <node pkg="tf" type="static_transform_publisher" name="laser_back_broadcaster" args="-0.475 0 0.15 3.14 0 0 base_link_copy laser_back_copy 1.25" />
+
     <param name="robot_description" textfile="$(find visualiser)/robot_models/four_wheel.urdf" />
 
     <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
@@ -12,6 +16,8 @@
         <param name="angular_velocity" type="double" value="0.02" />
         <param name="obstacle_safe_distance" type="double" value="0.5" />
     </node>
+
+    <node name="world_frame_publisher" pkg="robot" type="world_frame_publisher.py" />
 
     <node name="laser_scan_publisher" pkg="robot" type="laser_scan_publisher.py" output="screen">
         <param name="number_of_readings" type="int" value="7" />
