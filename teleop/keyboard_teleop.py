@@ -41,7 +41,6 @@ class KeyboardTeleopNode(object):
         if character == 'w':
             velocity.linear.x = self.linear_velocity
         elif character == 's':
-            print 'fuck'
             velocity.linear.x = -self.linear_velocity
         elif character == 'e':
             velocity.angular.z = self.angular_velocity
