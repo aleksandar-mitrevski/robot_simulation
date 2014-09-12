@@ -1,4 +1,5 @@
 from math import cos, sin, atan2, exp, sqrt, pi
+from random import uniform
 from pose import Pose
 from velocity import Velocity
 
@@ -8,7 +9,6 @@ class MotionModel(object):
         self.alpha2 = alpha2
         self.alpha3 = alpha3
         self.alpha4 = alpha4
-        self.b = noise_variance
 
     def sample_motion_model(self, pose, motion_command):
         delta_x = 0.
@@ -38,5 +38,9 @@ class MotionModel(object):
 
         return new_pose
 
-    def sample_normal_noise(self, a):
-        return 1. / sqrt(2*pi*self.b) * exp(-0.5 * a * a / self.b)
+    def sample_normal_noise(self, variance):
+        sample_sum = 0.
+        std_dev = sqrt(variance)
+        for i in xrange(12):
+            sample_sum = sample_sum + uniform(-std_dev, std_dev)
+        return 1. / 2. * sample_sum
