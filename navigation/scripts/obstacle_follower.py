@@ -33,19 +33,19 @@ class ObstacleFollower(object):
 
         if self.direction == Directions.Left:
             safe_diagonal = measurements.left_diagonal > self.safe_distance
-            safe_back_diagonal = measurements.left_back_diagonal > self.safe_distance
+            safe_back_diagonal = measurements.right_back_diagonal > self.safe_distance
             safe_side = measurements.left > self.safe_distance
 
             diagonal = measurements.left_diagonal
-            back_diagonal = measurements.left_back_diagonal
+            back_diagonal = measurements.right_back_diagonal
             side = measurements.left
         else:
             safe_diagonal = measurements.right_diagonal > 2 * self.safe_distance
-            safe_back_diagonal = measurements.right_back_diagonal > 2 * self.safe_distance
+            safe_back_diagonal = measurements.left_back_diagonal > 2 * self.safe_distance
             safe_side = measurements.right > 2 * self.safe_distance
 
             diagonal = measurements.right_diagonal
-            back_diagonal = measurements.right_back_diagonal
+            back_diagonal = measurements.left_back_diagonal
             side = measurements.right
 
         velocity = Velocity()
