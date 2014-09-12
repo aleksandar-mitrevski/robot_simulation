@@ -1,4 +1,4 @@
-from copy import copy
+from copy import copy, deepcopy
 from pose import Pose
 
 class Particle(object):
@@ -10,7 +10,7 @@ class Particle(object):
         self.weight = weight
 
     @staticmethod
-    def random_particle(self, neg_x_limit, x_limit, neg_y_limit, y_limit, weight):
+    def random_particle(neg_x_limit, x_limit, neg_y_limit, y_limit, weight):
         return Particle(Pose.random_pose(neg_x_limit, x_limit, neg_y_limit, y_limit), weight)
 
     def __deepcopy__(self, memo):

@@ -5,8 +5,10 @@ import numpy as np
 import rospy
 import tf
 from sensor_msgs.msg import LaserScan
-from map.srv import PositionOfClosestObstacle
+
 from scripts.laser_data import LaserData
+from map.srv import PositionOfClosestObstacle
+from robot.srv import SensorMeasurements, SensorMeasurementsResponse
 
 class LaserScanNode(object):
     def __init__(self):
@@ -25,16 +27,30 @@ class LaserScanNode(object):
         self.front_laser_frame = rospy.get_param('~front_sensor_frame', '/laser_front_copy')
         self.back_laser_frame = rospy.get_param('~back_sensor_frame', '/laser_back_copy')
 
+        self.scan_service = rospy.Service('sensor_measurements', SensorMeasurements, self.return_current_scans)
         self.scan_publisher = rospy.Publisher('laser_scan', LaserScan, queue_size=10)
 
         self.tf_listener = tf.TransformListener()
-        self.tf_listener.waitForTransform(self.world_frame, self.front_laser_frame, rospy.Time(0), rospy.Duration(10.))
-        self.tf_listener.waitForTransform(self.world_frame, self.back_laser_frame, rospy.Time(0), rospy.Duration(10.))
+        self.tf_listener.waitForTransform(self.world_frame, self.front_laser_frame, rospy.Time(0), rospy.Duration(10))
+        self.tf_listener.waitForTransform(self.world_frame, self.back_laser_frame, rospy.Time(0), rospy.Duration(10))
 
         while not rospy.is_shutdown():
             front_laser_data, back_laser_data = self.read_laser_data()
             self.publish_scans(front_laser_data)
             self.publish_scans(back_laser_data)
+
+    def return_current_scans(self, request=None):
+        front_laser_data, back_laser_data = self.read_laser_data()
+        scan_msgs = list()
+        front_scan_msg = self.generate_laser_msg(front_laser_data)
+        scan_msgs.append(front_scan_msg)
+
+        back_scan_msg = self.generate_laser_msg(back_laser_data)
+        scan_msgs.append(back_scan_msg)
+
+        response = SensorMeasurementsResponse()
+        response.scans = scan_msgs
+        return response
 
     def read_laser_data(self):
         front_laser_data = LaserData(self.actual_front_laser_frame)
@@ -63,7 +79,7 @@ class LaserScanNode(object):
         back_laser_data.heading = euler_rotation[2]
 
         front_angle = front_laser_data.heading - self.scanner_min_angle
-        back_angle = back_laser_data.heading + self.scanner_min_angle
+        back_angle = back_laser_data.heading - self.scanner_min_angle
         for i in xrange(self.number_of_readings):
             front_direction_x = cos(front_angle)
             front_direction_y = sin(front_angle)
@@ -98,11 +114,15 @@ class LaserScanNode(object):
                 rospy.logerr('position_of_closest_obstacle service call failed')
 
             front_angle = front_angle - self.scanner_angle_increment
-            back_angle = back_angle + self.scanner_angle_increment
+            back_angle = back_angle - self.scanner_angle_increment
 
         return front_laser_data, back_laser_data
 
     def publish_scans(self, laser_data):
+        laser_scan_msg = self.generate_laser_msg(laser_data)
+        self.scan_publisher.publish(laser_scan_msg)
+
+    def generate_laser_msg(self, laser_data):
         ranges = []
         for i in xrange(self.number_of_readings):
             distance = self.distance(laser_data.laser_position[0], laser_data.laser_position[1], laser_data.obstacle_positions[i,0], laser_data.obstacle_positions[i,1])
@@ -112,18 +132,18 @@ class LaserScanNode(object):
             else:
                 ranges.append(self.scanner_max_range)
 
-        laser_scan = LaserScan()
-        laser_scan.header.stamp = rospy.Time.now()
-        laser_scan.header.frame_id = laser_data.frame_id
-        laser_scan.angle_min = self.scanner_min_angle
-        laser_scan.angle_max = self.scanner_max_angle
-        laser_scan.angle_increment = self.scanner_angle_increment
-        laser_scan.time_increment = self.scanner_time_increment
-        laser_scan.range_min = self.scanner_min_range
-        laser_scan.range_max = self.scanner_max_range
-        laser_scan.ranges = ranges
+        laser_scan_msg = LaserScan()
+        laser_scan_msg.header.stamp = rospy.Time.now()
+        laser_scan_msg.header.frame_id = laser_data.frame_id
+        laser_scan_msg.angle_min = self.scanner_min_angle
+        laser_scan_msg.angle_max = self.scanner_max_angle
+        laser_scan_msg.angle_increment = self.scanner_angle_increment
+        laser_scan_msg.time_increment = self.scanner_time_increment
+        laser_scan_msg.range_min = self.scanner_min_range
+        laser_scan_msg.range_max = self.scanner_max_range
+        laser_scan_msg.ranges = ranges
 
-        self.scan_publisher.publish(laser_scan)
+        return laser_scan_msg
 
     def distance(self, point1_x, point1_y, point2_x, point2_y):
         return sqrt((point1_x - point2_x) * (point1_x - point2_x) + (point1_y - point2_y) * (point1_y - point2_y))

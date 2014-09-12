@@ -18,8 +18,8 @@ class MeasurementModel(object):
         for sensor, measurements in measurement_dict.iteritems():
             pose_measurements = self.measurement_generator_callback(pose, sensor)
             for i,measurement in enumerate(measurements):
-                if abs(measurement - self.model_params.max_range) > 0. and abs(measurement - self.model_params.min_range) > 0.:
-                    measurement_likelihood = self.likelihood(pose_measurements[i], measurement, measurement_sigma)
+                if abs(measurement - self.model_params.max_range) > 0:
+                    measurement_likelihood = self.likelihood(pose_measurements[i], measurement, self.model_params.hit_sigma)
                     likelihood = likelihood * measurement_likelihood
 
         return likelihood

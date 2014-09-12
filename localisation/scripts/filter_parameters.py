@@ -9,14 +9,13 @@ class MotionModelNoiseParameters(object):
         return MotionModelNoiseParameters(self.alpha1, self.alpha2, self.alpha3, self.alpha4)
 
 class MeasurementModelParameters(object):
-    def __init__(self, min_range, max_range, angle_increment, hit_sigma):
+    def __init__(self, min_range, max_range, hit_sigma):
         self.min_range = min_range
         self.max_range = max_range
-        self.angle_increment = angle_increment
         self.hit_sigma = hit_sigma
 
     def __copy__(self):
-        return MeasurementModelParameters(self.min_range, self.max_range, self.angle_increment, self.hit_sigma)
+        return MeasurementModelParameters(self.min_range, self.max_range, self.hit_sigma)
 
 class FilterParameters(object):
     def __init__(self, neg_x_limit, x_limit, neg_y_limit, y_limit, number_of_particles, number_of_random_particles):
