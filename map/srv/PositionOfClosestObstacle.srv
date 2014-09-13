@@ -3,6 +3,6 @@ float32 position_y
 float32 direction_vector_x
 float32 direction_vector_y
 ---
-string success
+bool success
 float32 position_x
 float32 position_y

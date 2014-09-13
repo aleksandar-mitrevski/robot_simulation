@@ -50,6 +50,7 @@ class LaserScanNode(object):
 
         response = SensorMeasurementsResponse()
         response.scans = scan_msgs
+        response.success = True
         return response
 
     def read_laser_data(self):
@@ -104,7 +105,7 @@ class LaserScanNode(object):
             try:
                 proxy = rospy.ServiceProxy('position_of_closest_obstacle', PositionOfClosestObstacle)
                 result = proxy(back_laser_data.laser_position[0], back_laser_data.laser_position[1], back_direction_x, back_direction_y)
-                if result.success == 'success':
+                if result.success:
                     back_laser_data.obstacle_positions[i,0] = result.position_x
                     back_laser_data.obstacle_positions[i,1] = result.position_y
                 else:
