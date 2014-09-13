@@ -43,4 +43,4 @@ class MotionModel(object):
         std_dev = sqrt(variance)
         for i in xrange(12):
             sample_sum = sample_sum + uniform(-std_dev, std_dev)
-        return 1. / 2. * sample_sum
+        return 0.5 * sample_sum
