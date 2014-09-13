@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import numpy as np
+from math import cos, sin, sqrt
 
 import rospy
 import tf
@@ -21,6 +22,7 @@ class LocalisationNode(object):
     def __init__(self):
         self.number_of_particles = int(rospy.get_param('~number_of_particles', '100'))
         self.number_of_random_particles = int(rospy.get_param('~number_of_random_particles', '5'))
+        self.map_frame = rospy.get_param('~map_frame', '/map')
         self.odom_frame = rospy.get_param('~odom_frame', '/odom')
         self.base_frame = rospy.get_param('~base_frame', '/base_link')
         self.number_of_readings = int(rospy.get_param('~number_of_readings', '180'))
@@ -33,25 +35,27 @@ class LocalisationNode(object):
         self.scanner_angle_increment = float(rospy.get_param('~scanner_angle_increment', '0.0174'))
         self.scanner_min_range = float(rospy.get_param('~scanner_min_range', '0.0'))
         self.scanner_max_range = float(rospy.get_param('~scanner_max_range', '5.0'))
-        self.hit_sigma = float(rospy.get_param('~hit_sigma', '1.'))
-        self.alpha1 = float(rospy.get_param('~alpha1', '0.0001'))
-        self.alpha2 = float(rospy.get_param('~alpha2', '0.0001'))
-        self.alpha3 = float(rospy.get_param('~alpha3', '0.0001'))
-        self.alpha4 = float(rospy.get_param('~alpha4', '0.0001'))
+        self.hit_sigma = float(rospy.get_param('~hit_sigma', '0.5'))
+        self.max_measurements_counter_tolerance = int(rospy.get_param('~max_measurements_counter_tolerance', '3'))
+        self.weight_sum_tolerance = float(rospy.get_param('~weight_sum_tolerance', '0.000001'))
+        self.alpha1 = float(rospy.get_param('~alpha1', '0.00001'))
+        self.alpha2 = float(rospy.get_param('~alpha2', '0.00001'))
+        self.alpha3 = float(rospy.get_param('~alpha3', '0.00001'))
+        self.alpha4 = float(rospy.get_param('~alpha4', '0.00001'))
 
         self.tf_listener = tf.TransformListener()
         self.tf_listener.waitForTransform(self.odom_frame, self.base_frame, rospy.Time(0), rospy.Duration(10))
 
         self.tf_broadcaster = tf.TransformBroadcaster()
-        self.tf_broadcaster.sendTransform((0.,0.,0.),(0.,0.,0.,1.), rospy.Time.now(), "odom", "map")
+        self.tf_broadcaster.sendTransform((0.,0.,0.),(0.,0.,0.,1.), rospy.Time.now(), self.odom_frame, self.map_frame)
 
         rospy.Subscriber('cmd_vel', Twist, self.update_filter)
         self.most_likely_pose_publisher = rospy.Publisher('visualization_marker', Marker, queue_size=100)
         self.particle_publisher = rospy.Publisher('visualization_marker_array', MarkerArray, queue_size=200)
 
         motion_model_params = MotionModelNoiseParameters(self.alpha1, self.alpha2, self.alpha3, self.alpha4)
-        measurement_model_params = MeasurementModelParameters(self.scanner_min_range, self.scanner_max_range, self.hit_sigma)
-        filter_params = FilterParameters(self.neg_x_limit, self.x_limit, self.neg_y_limit, self.y_limit, self.number_of_particles, self.number_of_random_particles)
+        measurement_model_params = MeasurementModelParameters(self.scanner_min_range, self.scanner_max_range, self.hit_sigma, self.max_measurements_counter_tolerance)
+        filter_params = FilterParameters(self.neg_x_limit, self.x_limit, self.neg_y_limit, self.y_limit, self.number_of_particles, self.number_of_random_particles, self.weight_sum_tolerance)
         self.particle_filter = ParticleFilter(motion_model_params, measurement_model_params, filter_params, self.generate_measurements)
 
         while not rospy.is_shutdown():
@@ -79,7 +83,7 @@ class LocalisationNode(object):
         translation = tf.transformations.translation_from_matrix(transf_map_odom)
         quaternion = tf.transformations.quaternion_from_matrix(transf_map_odom)
 
-        self.tf_broadcaster.sendTransform(translation, quaternion, rospy.Time.now(), "odom", "map")
+        self.tf_broadcaster.sendTransform(translation, quaternion, rospy.Time.now(), self.odom_frame, self.map_frame)
 
     def update_filter(self, velocity_msg=None):
         velocity = Velocity()
@@ -105,7 +109,7 @@ class LocalisationNode(object):
 
         frame = sensor_frame
         translation_matrix = tf.transformations.translation_matrix([pose.x, pose.y, 0])
-        quaternion = tf.quaternion_from_euler(0, 0, pose.heading)
+        quaternion = tf.transformations.quaternion_from_euler(0, 0, pose.heading)
         quaternion_matrix = tf.transformations.quaternion_matrix(quaternion)
         transf_odom_base = np.dot(translation_matrix, quaternion_matrix)
 
@@ -132,7 +136,7 @@ class LocalisationNode(object):
             try:
                 proxy = rospy.ServiceProxy('position_of_closest_obstacle', PositionOfClosestObstacle)
                 result = proxy(laser_translation[0], laser_translation[1], direction_x, direction_y)
-                if result.success == 'success':
+                if result.success:
                     distance = self.distance(laser_translation[0], laser_translation[1], result.position_x, result.position_y)
                     distance_with_noise = self.hit_sigma * np.random.randn() + distance
                     if distance_with_noise < self.scanner_max_range:
@@ -145,7 +149,7 @@ class LocalisationNode(object):
                 rospy.logerr('position_of_closest_obstacle service call failed')
                 ranges.append(self.scanner_max_range)
 
-            angle = angle - self.angle_increment
+            angle = angle - self.scanner_angle_increment
 
         return ranges
 
@@ -153,7 +157,7 @@ class LocalisationNode(object):
         quaternion = tf.transformations.quaternion_from_euler(0, 0, most_likely_pose.heading)
 
         most_likely_pose_marker = Marker()
-        most_likely_pose_marker.header.frame_id = 'map'
+        most_likely_pose_marker.header.frame_id = self.base_frame
         most_likely_pose_marker.header.stamp = rospy.Time.now()
         most_likely_pose_marker.type = most_likely_pose_marker.ARROW
         most_likely_pose_marker.pose.position.x = most_likely_pose.x
@@ -168,8 +172,8 @@ class LocalisationNode(object):
         most_likely_pose_marker.color.g = 1.
         most_likely_pose_marker.color.b = 0.
         most_likely_pose_marker.scale.x = 0.5
-        most_likely_pose_marker.scale.y = 0.5
-        most_likely_pose_marker.scale.z = 0.5
+        most_likely_pose_marker.scale.y = 0.2
+        most_likely_pose_marker.scale.z = 0.1
 
         self.most_likely_pose_publisher.publish(most_likely_pose_marker)
 
@@ -178,7 +182,7 @@ class LocalisationNode(object):
             quaternion = tf.transformations.quaternion_from_euler(0, 0, particle.pose.heading)
 
             marker = Marker()
-            marker.header.frame_id = 'map'
+            marker.header.frame_id = self.base_frame
             marker.header.stamp = rospy.Time.now()
             marker.type = marker.ARROW
             marker.pose.position.x = particle.pose.x
@@ -193,12 +197,15 @@ class LocalisationNode(object):
             marker.color.g = 0.
             marker.color.b = 1.
             marker.scale.x = 0.5
-            marker.scale.y = 0.5
-            marker.scale.z = 0.5
+            marker.scale.y = 0.2
+            marker.scale.z = 0.1
 
             particle_marker_array.markers.append(marker)
 
         self.particle_publisher.publish(particle_marker_array)
+
+    def distance(self, point1_x, point1_y, point2_x, point2_y):
+        return sqrt((point1_x - point2_x) * (point1_x - point2_x) + (point1_y - point2_y) * (point1_y - point2_y))
 
 if __name__ == '__main__':
     rospy.init_node('localisation')
