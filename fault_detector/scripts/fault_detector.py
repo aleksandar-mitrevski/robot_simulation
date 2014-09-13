@@ -1,0 +1,2 @@
+class FaultDetector(object):
+    pass
