@@ -1,0 +1,7 @@
+float32 position_x
+float32 position_y
+float32[] direction_vector_x
+float32[] direction_vector_y
+float32[] ranges
+---
+CellCoordinateArray[] cell_coordinates

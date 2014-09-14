@@ -4,7 +4,7 @@ from coordinates import Coordinates
 import Image
 
 class OccupancyGridMap(object):
-    def __init__(self, map_image_file_name=None, width=10., height=10., resolution=0.1):
+    def __init__(self, width=10., height=10., resolution=0.1, map_image_file_name=None):
         '''Initialises an occupancy grid map with x coordinates in the range
         (-width/2,width/2) and y coordinates in the range (-height/2,height/2).
 
@@ -18,7 +18,7 @@ class OccupancyGridMap(object):
         self.rows = int(round(height / resolution))
         self.columns = int(round(width / resolution))
         self.resolution = resolution
-        self.occupancy_grid = -1. * np.ones((self.rows, self.columns))
+        self.occupancy_grid = 50. * np.ones((self.rows, self.columns))
 
         if map_image_file_name != None:
             self._read_map(map_image_file_name)
@@ -31,6 +31,12 @@ class OccupancyGridMap(object):
 
     def get_map_origin(self):
         return Coordinates(self.x_boundaries[0] + self.resolution/2., self.y_boundaries[0] + self.resolution / 2.)
+
+    def update_occupancy_values(self, occupancy_values):
+        values = np.array(update_occupancy_values).reshape((self.rows, self.columns))
+        for i in xrange(self.rows):
+            for j in xrange(self.columns):
+                self.occupancy_grid[i,j] = values[i,j]
 
     def find_closest_obstacle(self, position, direction):
         t = 0.
@@ -51,6 +57,34 @@ class OccupancyGridMap(object):
                 position_inside_map = False
 
         return obstacle_position, position_inside_map
+
+    def find_ray_traced_cells(self, position, direction, distance):
+        t = 0.
+        t_increment = self.resolution / 10
+        point_position = Coordinates(position.x, position.y)
+        tracing_over = False
+        included_cells_map_coordinates = list()
+        included_cells_world_coordinates = list()
+
+        while not tracing_over:
+            try:
+                map_coordinates = self.world_to_map_coordinates(point_position.x, point_position.y)
+                cell_world_coordinates = self.map_to_world_coordinates(map_coordinates.x, map_coordinates.y)
+                if position.distance(cell_world_coordinates) > distance:
+                    tracing_over = True
+
+                if map_coordinates not in included_cells and not tracing_over:
+                    included_cells_map_coordinates.append(map_coordinates)
+                    included_cells_world_coordinates.append(cell_world_coordinates)
+                else:
+                    continue
+
+                t = t + t_increment
+                point_position = position + direction.multiply(t)
+            except ValueError:
+                tracing_over = True
+
+        return included_cells_map_coordinates, included_cells_world_coordinates
 
     def map_to_world_coordinates(self, row_index, column_index):
         '''Converts the given map coordinates to world coordinates
@@ -106,6 +140,6 @@ class OccupancyGridMap(object):
             pixels = image.resize(map_size).load()
             for i in xrange(map_size[0]):
                 for j in xrange(map_size[1]):
-                    self.occupancy_grid[i,j] = 100 - int(pixels[i,j] / 255. * 100)
+                    self.occupancy_grid[i,j] = 100. - pixels[i,j] / 255. * 100
         except IOError:
             raise

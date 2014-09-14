@@ -1,3 +1,5 @@
+from math import sqrt
+
 class Coordinates(object):
     def __init__(self, x=0, y=0):
         self.x = x
@@ -14,3 +16,6 @@ class Coordinates(object):
 
     def multiply(self, factor):
         return Coordinates(factor * self.x, factor * self.y)
+
+    def distance(self, other):
+        return sqrt((self.x - other.x) * (self.x - other.x) + (self.y - other.y) * (self.y - other.y))
