@@ -55,6 +55,7 @@ class MotionControllerNode(object):
         else:
             actual_velocity.angular = velocity.angular.z
 
+        self.publish_velocity(actual_velocity)
         self.publish_transform(actual_velocity)
 
     def move_to_goal_callback(self, goal):

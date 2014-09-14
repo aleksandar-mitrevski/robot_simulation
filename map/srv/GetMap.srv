@@ -1,2 +1,2 @@
 ---
-nav_msgs/OccupancyGrid occupancy_grid
+OccupancyGridFloat occupancy_grid

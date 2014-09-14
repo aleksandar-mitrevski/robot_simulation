@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import numpy as np
+from math import cos, sin
 
 import rospy
 import tf
@@ -16,14 +17,14 @@ class MappingNode(object):
     def __init__(self):
         self.map_frame = rospy.get_param('map_frame', '/map')
         self.obstacle_thickness = float(rospy.get_param('~obstacle_thickness', '0.5'))
-        self.occ_prob_increment = float(rospy.get_param('~occ_prob_increment', '0.001'))
-        self.free_prob_increment = float(rospy.get_param('~free_prob_increment', '0.001'))
+        self.log_occ_prob_increment = float(rospy.get_param('~log_occ_prob_increment', '0.040005'))
+        self.log_free_prob_increment = float(rospy.get_param('~log_free_prob_increment', '-0.040005'))
 
         self.tf_listener = tf.TransformListener()
 
         rospy.Subscriber('laser_scan', LaserScan, self.update_map)
         self.map_values_update_publisher = rospy.Publisher('occupancy_grid_update', OccupancyGrid, queue_size=10)
-        self.mapper = Mapper(MappingParameters(self.obstacle_thickness, self.occ_prob_increment, self.free_prob_increment))
+        self.mapper = Mapper(MappingParameters(self.obstacle_thickness, self.log_occ_prob_increment, self.log_free_prob_increment))
 
     def update_map(self, scans):
         occupancy_grid = None
@@ -43,6 +44,7 @@ class MappingNode(object):
             return
 
         laser_position = Coordinates(translation[0], translation[1])
+        laser_euler_rotation = tf.transformations.euler_from_quaternion(quat_rotation)
 
         directions_x = list()
         directions_y = list()
@@ -57,17 +59,19 @@ class MappingNode(object):
 
         rospy.wait_for_service('ray_traced_cells')
         try:
-            proxy = rospy.ServiceProxy('ray_traced_cells')
+            proxy = rospy.ServiceProxy('ray_traced_cells', RayTracedCells)
             result = proxy(laser_position.x, laser_position.y, directions_x, directions_y, scans.ranges)
 
             world_coordinates = list()
             map_coordinates = list()
-            number_of_cells = len(result.cell_coordinates.world_coordinates)
-            for i in xrange(number_of_cells):
-                world_coordinates.append(Coordinates(result.cell_coordinates.world_coordinates[i].x, result.cell_coordinates.world_coordinates[i].y))
-                map_coordinates.append(Coordinates(result.cell_coordinates.map_coordinates[i].x, result.cell_coordinates.map_coordinates[i].y))
+            for i in xrange(number_of_readings):
+                number_of_cells = len(result.cell_coordinates[i].world_coordinates)
+                for j in xrange(number_of_cells):
+                    world_coordinates.append(Coordinates(result.cell_coordinates[i].world_coordinates[j].x, result.cell_coordinates[i].world_coordinates[j].y))
+                    map_coordinates.append(Coordinates(result.cell_coordinates[i].map_coordinates[j].x, result.cell_coordinates[i].map_coordinates[j].y))
+                    occupancy_grid = self.mapper.update_map(occupancy_grid, laser_position, scans.range_max, world_coordinates, map_coordinates, scans.ranges[i])
 
-            occupancy_grid = self.mapper.update_map(occupancy_grid, laser_position, scans.range_max, world_coordinates, map_coordinate, scans.ranges)
+            self.publish_updated_map_values(occupancy_grid)
         except rospy.ServiceException:
             rospy.logerr('ray_traced_cells service call failed')
             return
@@ -77,7 +81,7 @@ class MappingNode(object):
         occupancy_grid_msg.header.stamp = rospy.Time.now()
         occupancy_grid_msg.data = list(occupancy_grid.flatten().astype(int))
 
-        self.self.map_values_update_publisher.publish(occupancy_grid_msg)
+        self.map_values_update_publisher.publish(occupancy_grid_msg)
 
 if __name__ == '__main__':
     rospy.init_node('mapping')

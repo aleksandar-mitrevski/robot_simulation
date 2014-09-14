@@ -33,7 +33,7 @@ class OccupancyGridMap(object):
         return Coordinates(self.x_boundaries[0] + self.resolution/2., self.y_boundaries[0] + self.resolution / 2.)
 
     def update_occupancy_values(self, occupancy_values):
-        values = np.array(update_occupancy_values).reshape((self.rows, self.columns))
+        values = np.array(occupancy_values).reshape((self.rows, self.columns))
         for i in xrange(self.rows):
             for j in xrange(self.columns):
                 self.occupancy_grid[i,j] = values[i,j]
@@ -48,7 +48,7 @@ class OccupancyGridMap(object):
         while position_inside_map:
             try:
                 map_coordinates = self.world_to_map_coordinates(point_position.x, point_position.y)
-                if self.occupancy_grid[map_coordinates.x, map_coordinates.y] == 100:
+                if self.occupancy_grid[map_coordinates.x, map_coordinates.y] > 95:
                     obstacle_position = point_position
                     break
                 t = t + t_increment
@@ -73,11 +73,9 @@ class OccupancyGridMap(object):
                 if position.distance(cell_world_coordinates) > distance:
                     tracing_over = True
 
-                if map_coordinates not in included_cells and not tracing_over:
+                if map_coordinates not in included_cells_map_coordinates and not tracing_over:
                     included_cells_map_coordinates.append(map_coordinates)
                     included_cells_world_coordinates.append(cell_world_coordinates)
-                else:
-                    continue
 
                 t = t + t_increment
                 point_position = position + direction.multiply(t)

@@ -7,7 +7,7 @@ from scripts.coordinates import Coordinates
 from scripts.occupancy_grid_map import OccupancyGridMap
 
 from map.srv import *
-from map.msg import CellCoordinateArray
+from map.msg import CellCoordinateArray, OccupancyGridFloat
 
 class MapNode(object):
     def __init__(self):
@@ -70,20 +70,13 @@ class MapNode(object):
 
         self.rviz_map_publisher.publish(occupancy_grid_msg)
 
-    def get_map(self):
-        occupancy_grid_msg = OccupancyGrid()
-        occupancy_grid_msg.header.stamp = rospy.Time.now()
-        occupancy_grid_msg.header.frame_id = self.map_frame
+    def get_map(self, request=None):
+        occupancy_grid_msg = OccupancyGridFloat()
 
-        occupancy_grid_msg.info.width = self.occupancy_grid.columns
-        occupancy_grid_msg.info.height = self.occupancy_grid.rows
-        occupancy_grid_msg.info.resolution = self.occupancy_grid.resolution
-
-        map_origin = self.occupancy_grid.get_map_origin()
-        origin_pose = Pose(Point(map_origin.x, map_origin.y, 0.), Quaternion(0., 0., 0., 1.))
-        occupancy_grid_msg.info.origin = origin_pose
-
-        occupancy_grid_msg.data = list(self.occupancy_grid.get_map().flatten().astype(int))
+        occupancy_grid_msg.width = self.occupancy_grid.columns
+        occupancy_grid_msg.height = self.occupancy_grid.rows
+        occupancy_grid_msg.resolution = self.occupancy_grid.resolution
+        occupancy_grid_msg.data = list(self.occupancy_grid.get_map().flatten())
         return GetMapResponse(occupancy_grid_msg)
 
     def find_position_of_closest_obstacle(self, request):

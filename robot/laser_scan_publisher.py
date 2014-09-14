@@ -45,8 +45,8 @@ class LaserScanNode(object):
         front_scan_msg = self.generate_laser_msg(front_laser_data)
         scan_msgs.append(front_scan_msg)
 
-        back_scan_msg = self.generate_laser_msg(back_laser_data)
-        scan_msgs.append(back_scan_msg)
+        #back_scan_msg = self.generate_laser_msg(back_laser_data)
+        #scan_msgs.append(back_scan_msg)
 
         response = SensorMeasurementsResponse()
         response.scans = scan_msgs
@@ -92,7 +92,7 @@ class LaserScanNode(object):
             try:
                 proxy = rospy.ServiceProxy('position_of_closest_obstacle', PositionOfClosestObstacle)
                 result = proxy(front_laser_data.laser_position[0], front_laser_data.laser_position[1], front_direction_x, front_direction_y)
-                if result.success == 'success':
+                if result.success:
                     front_laser_data.obstacle_positions[i,0] = result.position_x
                     front_laser_data.obstacle_positions[i,1] = result.position_y
                 else:
