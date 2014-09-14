@@ -7,7 +7,7 @@ from fault_detector.msg import FaultAlarm
 
 class FaultDetectorNode(object):
     def __init__(self):
-        rospy.Subscriber('laser_scan', LaserScan, self.velocity_callback)
+        rospy.Subscriber('laser_scan', LaserScan, self.process_measurements)
         self.fault_alarm_publisher = rospy.Publisher('fault_alarm', FaultAlarm, queue_size=10)
 
     def process_measurements(self, scans):
