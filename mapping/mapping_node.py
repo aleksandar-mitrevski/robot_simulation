@@ -5,12 +5,11 @@ from math import cos, sin
 import rospy
 import tf
 from sensor_msgs.msg import LaserScan
-from nav_msgs.msg import OccupancyGrid
 
 from scripts.mapper import Mapper
 from scripts.mapping_parameters import MappingParameters
 from scripts.coordinates import Coordinates
-from map.msg import CellCoordinateArray
+from map.msg import CellCoordinateArray, OccupancyGridFloat
 from map.srv import GetMap, RayTracedCells
 
 class MappingNode(object):
@@ -23,7 +22,7 @@ class MappingNode(object):
         self.tf_listener = tf.TransformListener()
 
         rospy.Subscriber('laser_scan', LaserScan, self.update_map)
-        self.map_values_update_publisher = rospy.Publisher('occupancy_grid_update', OccupancyGrid, queue_size=10)
+        self.map_values_update_publisher = rospy.Publisher('occupancy_grid_update', OccupancyGridFloat, queue_size=10)
         self.mapper = Mapper(MappingParameters(self.obstacle_thickness, self.log_occ_prob_increment, self.log_free_prob_increment))
 
     def update_map(self, scans):
@@ -51,9 +50,9 @@ class MappingNode(object):
         angle = laser_euler_rotation[2] - scans.angle_min
         number_of_readings = int((scans.angle_max - scans.angle_min) / scans.angle_increment) + 1
         for i in xrange(number_of_readings):
-            direction_x = cos(angle)
+            direction_x = cos(self.normalise_angle(angle))
             directions_x.append(direction_x)
-            direction_y = sin(angle)
+            direction_y = sin(self.normalise_angle(angle))
             directions_y.append(direction_y)
             angle = angle - scans.angle_increment
 
@@ -77,11 +76,15 @@ class MappingNode(object):
             return
 
     def publish_updated_map_values(self, occupancy_grid):
-        occupancy_grid_msg = OccupancyGrid()
-        occupancy_grid_msg.header.stamp = rospy.Time.now()
-        occupancy_grid_msg.data = list(occupancy_grid.flatten().astype(int))
+        occupancy_grid_msg = OccupancyGridFloat()
+        occupancy_grid_msg.data = list(occupancy_grid.flatten())
 
         self.map_values_update_publisher.publish(occupancy_grid_msg)
+
+    def normalise_angle(self, angle):
+        if angle < 0.:
+            angle = angle + 2 * 3.14
+        return angle
 
 if __name__ == '__main__':
     rospy.init_node('mapping')

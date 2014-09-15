@@ -25,7 +25,7 @@ class MapNode(object):
         self.rviz_map_publisher = rospy.Publisher('nav_msgs/occupancy_grid', OccupancyGrid, queue_size=5)
         self.map_service = rospy.Service('get_map', GetMap, self.get_map)
         self.ray_traced_cells_service = rospy.Service('ray_traced_cells', RayTracedCells, self.get_ray_traced_cells)
-        rospy.Subscriber('occupancy_grid_update', OccupancyGrid, self.update_occupancy_values)
+        rospy.Subscriber('occupancy_grid_update', OccupancyGridFloat, self.update_occupancy_values)
         self.closest_obstacle_service = rospy.Service('position_of_closest_obstacle', PositionOfClosestObstacle, self.find_position_of_closest_obstacle)
         self.closest_obstacles_service = rospy.Service('positions_of_closest_obstacle', PositionsOfClosestObstacle, self.find_positions_of_closest_obstacle)
 
@@ -112,6 +112,9 @@ class MapNode(object):
 
     def update_occupancy_values(self, grid_msg):
         occupancy_values = list(grid_msg.data)
+        for i in xrange(len(occupancy_values)):
+            if occupancy_values[i] > 50:
+                print occupancy_values[i]
         self.occupancy_grid.update_occupancy_values(occupancy_values)
 
     def get_ray_traced_cells(self, request):
@@ -125,9 +128,9 @@ class MapNode(object):
 
             coordinate_array = CellCoordinateArray()
             number_of_cells = len(included_cells_map_coordinates)
-            for i in xrange(number_of_cells):
-                coordinate_array.map_coordinates.append(Point(included_cells_map_coordinates[i].x, included_cells_map_coordinates[i].y, 0))
-                coordinate_array.world_coordinates.append(Point(included_cells_world_coordinates[i].x, included_cells_world_coordinates[i].y, 0))
+            for j in xrange(number_of_cells):
+                coordinate_array.map_coordinates.append(Point(included_cells_map_coordinates[j].x, included_cells_map_coordinates[j].y, 0))
+                coordinate_array.world_coordinates.append(Point(included_cells_world_coordinates[j].x, included_cells_world_coordinates[j].y, 0))
             ray_coordinates.append(coordinate_array)
 
         return RayTracedCellsResponse(ray_coordinates)

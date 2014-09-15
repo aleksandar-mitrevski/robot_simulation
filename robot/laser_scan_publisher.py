@@ -45,8 +45,8 @@ class LaserScanNode(object):
         front_scan_msg = self.generate_laser_msg(front_laser_data)
         scan_msgs.append(front_scan_msg)
 
-        #back_scan_msg = self.generate_laser_msg(back_laser_data)
-        #scan_msgs.append(back_scan_msg)
+        back_scan_msg = self.generate_laser_msg(back_laser_data)
+        scan_msgs.append(back_scan_msg)
 
         response = SensorMeasurementsResponse()
         response.scans = scan_msgs
@@ -82,11 +82,11 @@ class LaserScanNode(object):
         front_angle = front_laser_data.heading - self.scanner_min_angle
         back_angle = back_laser_data.heading - self.scanner_min_angle
         for i in xrange(self.number_of_readings):
-            front_direction_x = cos(front_angle)
-            front_direction_y = sin(front_angle)
+            front_direction_x = cos(self.normalise_angle(front_angle))
+            front_direction_y = sin(self.normalise_angle(front_angle))
 
-            back_direction_x = cos(back_angle)
-            back_direction_y = sin(back_angle)
+            back_direction_x = cos(self.normalise_angle(back_angle))
+            back_direction_y = sin(self.normalise_angle(back_angle))
 
             rospy.wait_for_service('position_of_closest_obstacle')
             try:
@@ -148,6 +148,11 @@ class LaserScanNode(object):
 
     def distance(self, point1_x, point1_y, point2_x, point2_y):
         return sqrt((point1_x - point2_x) * (point1_x - point2_x) + (point1_y - point2_y) * (point1_y - point2_y))
+
+    def normalise_angle(self, angle):
+        if angle < 0.:
+            angle = angle + 2 * 3.14
+        return angle
 
 if __name__ == '__main__':
     rospy.init_node('laser_scan_publisher')
