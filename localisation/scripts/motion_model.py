@@ -11,6 +11,9 @@ class MotionModel(object):
         self.noise_params = copy(noise_params)
 
     def sample_motion_model(self, pose, motion_command):
+        '''Samples the robot's motion model given a pose and a motion command.
+        The algorithm follows the pseudo code of 'sample_motion_model_odometry' in 'Probabilistic Robotics', chapter 5.
+        '''
         delta_x = 0.
         delta_y = 0.
         delta_heading = 0.
@@ -39,6 +42,8 @@ class MotionModel(object):
         return new_pose
 
     def sample_normal_noise(self, variance):
+        '''Returns a sample from a zero-mean normal distribution with the given variance.
+        '''
         sample_sum = 0.
         std_dev = sqrt(variance)
         for i in xrange(12):

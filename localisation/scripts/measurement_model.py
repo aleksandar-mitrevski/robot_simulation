@@ -8,11 +8,11 @@ class MeasurementModel(object):
         self.measurement_generator_callback = measurement_generator_callback
 
     def calculate_measurement_likelihood(self, pose, measurement_dict):
-        '''
+        '''Calculates the likelihood of the current sensor measurements for the given pose.
+
         Keyword arguments:
         pose - The pose of a particle.
-        measurement_dict - A dictionary where each key is a name of sensor frames 
-                       and the values are measurements obtained with the respective sensor.
+        measurement_dict - A dictionary where each key is a name of a sensor frame and the values are measurements obtained with the respective sensor.
         '''
         likelihood = 1.
         max_range_measurements_counter = 0

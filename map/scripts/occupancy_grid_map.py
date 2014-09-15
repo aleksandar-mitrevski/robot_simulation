@@ -15,6 +15,8 @@ class OccupancyGridMap(object):
         resolution -- Map resolution in meters (default 0.1)
 
         '''
+        self.width = width
+        self.height = height
         self.rows = int(round(height / resolution))
         self.columns = int(round(width / resolution))
         self.resolution = resolution
@@ -30,20 +32,39 @@ class OccupancyGridMap(object):
         return np.array(self.occupancy_grid)
 
     def get_map_origin(self):
+        '''Returns a 'Coordinates' object representing the world coordinates of the (0,0) cell.
+        '''
         return Coordinates(self.x_boundaries[0] + self.resolution/2., self.y_boundaries[0] + self.resolution / 2.)
 
     def update_occupancy_values(self, occupancy_values):
+        '''Updates the occupancy values of the map.
+
+        Keyword arguments:
+        occupancy_values -- A list of size 'self.rows' * 'self.columns' containing the new occupancy values.
+
+        '''
         values = np.array(occupancy_values).reshape((self.rows, self.columns))
         for i in xrange(self.rows):
             for j in xrange(self.columns):
                 self.occupancy_grid[i,j] = values[i,j]
 
     def find_closest_obstacle(self, position, direction):
+        '''Finds the coordinates of the obstacle closest to a range scanner at a given position and in a certain direction.
+
+        Keyword arguments:
+        position -- A 'Coordinates' object representing the position of a range sensor.
+        direction -- A 'Coordinates' object representing the direction vector of the sensor's ray.
+
+        Returns:
+        obstacle_position -- A 'Coordinates' object representing the map coordinates of the closest obstacle. The coordinates (width,height) are returned if the measurement falls outside the map.
+        position_inside_map -- True if the closest obstacle is inside the map and False otherwise.
+
+        '''
         t = 0.
         t_increment = self.resolution / 10
         point_position = Coordinates(position.x, position.y)
         position_inside_map = True
-        obstacle_position = Coordinates()
+        obstacle_position = Coordinates(self.width, self.height)
 
         while position_inside_map:
             try:
@@ -59,6 +80,19 @@ class OccupancyGridMap(object):
         return obstacle_position, position_inside_map
 
     def find_ray_traced_cells(self, position, direction, distance):
+        '''Finds the coordinates of the cells traced by a range scanner at a given position
+        and in a certain direction, given a measurement of a certain distance.
+
+        Keyword arguments:
+        position -- A 'Coordinates' object representing the position of a range sensor.
+        direction -- A 'Coordinates' object representing the direction vector of the sensor's ray.
+        distance -- The measured distance by the sensor (in meters).
+
+        Returns:
+        included_cells_map_coordinates -- Map coordinates of the traced cells.
+        included_cells_world_coordinates -- World coordinates of the traced cells.
+
+        '''
         t = 0.
         t_increment = self.resolution / 10
         point_position = Coordinates(position.x, position.y)
@@ -132,6 +166,12 @@ class OccupancyGridMap(object):
         return x < self.x_boundaries[0] or x > self.x_boundaries[1] or y < self.y_boundaries[0] or y > self.y_boundaries[1]
 
     def _read_map(self, map_image_file_name):
+        '''Reads a map from an image file.
+
+        Keyword arguments:
+        map_image_file_name -- Name of a grayscale image representing a map.
+
+        '''
         map_size = self.occupancy_grid.shape
         try:
             image = Image.open(map_image_file_name).convert('L')
