@@ -11,6 +11,7 @@ from scripts.mapping_parameters import MappingParameters
 from scripts.coordinates import Coordinates
 from map.msg import CellCoordinateArray, OccupancyGridFloat
 from map.srv import GetMap, RayTracedCells
+from robot.msg import ScanAndPose
 
 class MappingNode(object):
     def __init__(self):
@@ -21,11 +22,26 @@ class MappingNode(object):
 
         self.tf_listener = tf.TransformListener()
 
-        rospy.Subscriber('laser_scan', LaserScan, self.update_map)
+        rospy.Subscriber('scan_and_pose', ScanAndPose, self.update_map)
         self.map_values_update_publisher = rospy.Publisher('occupancy_grid_update', OccupancyGridFloat, queue_size=10)
         self.mapper = Mapper(MappingParameters(self.obstacle_thickness, self.log_occ_prob_increment, self.log_free_prob_increment))
 
-    def update_map(self, scans):
+    def update_map(self, scan_and_pose):
+        laser_position = Coordinates(scan_and_pose.pose.pose.position.x, scan_and_pose.pose.pose.position.y)
+        laser_quaternion = [scan_and_pose.pose.pose.orientation.x, scan_and_pose.pose.pose.orientation.y, scan_and_pose.pose.pose.orientation.z, scan_and_pose.pose.pose.orientation.w]
+        laser_euler_rotation = tf.transformations.euler_from_quaternion(laser_quaternion)
+
+        directions_x = list()
+        directions_y = list()
+        angle = laser_euler_rotation[2] - scan_and_pose.scan.angle_min
+        number_of_readings = int((scan_and_pose.scan.angle_max - scan_and_pose.scan.angle_min) / scan_and_pose.scan.angle_increment) + 1
+        for i in xrange(number_of_readings):
+            direction_x = cos(self.normalise_angle(angle))
+            directions_x.append(direction_x)
+            direction_y = sin(self.normalise_angle(angle))
+            directions_y.append(direction_y)
+            angle = angle - scan_and_pose.scan.angle_increment
+
         occupancy_grid = None
         rospy.wait_for_service('get_map')
         try:
@@ -36,30 +52,10 @@ class MappingNode(object):
             rospy.logerr('get_map service call failed')
             return
 
-        self.tf_listener.waitForTransform(self.map_frame, scans.header.frame_id, rospy.Time(0), rospy.Duration(10))
-        try:
-            (translation, quat_rotation) = self.tf_listener.lookupTransform(self.map_frame, scans.header.frame_id, rospy.Time(0))
-        except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-            return
-
-        laser_position = Coordinates(translation[0], translation[1])
-        laser_euler_rotation = tf.transformations.euler_from_quaternion(quat_rotation)
-
-        directions_x = list()
-        directions_y = list()
-        angle = laser_euler_rotation[2] - scans.angle_min
-        number_of_readings = int((scans.angle_max - scans.angle_min) / scans.angle_increment) + 1
-        for i in xrange(number_of_readings):
-            direction_x = cos(self.normalise_angle(angle))
-            directions_x.append(direction_x)
-            direction_y = sin(self.normalise_angle(angle))
-            directions_y.append(direction_y)
-            angle = angle - scans.angle_increment
-
         rospy.wait_for_service('ray_traced_cells')
         try:
             proxy = rospy.ServiceProxy('ray_traced_cells', RayTracedCells)
-            result = proxy(laser_position.x, laser_position.y, directions_x, directions_y, scans.ranges)
+            result = proxy(laser_position.x, laser_position.y, directions_x, directions_y, scan_and_pose.scan.ranges)
 
             world_coordinates = list()
             map_coordinates = list()
@@ -68,7 +64,7 @@ class MappingNode(object):
                 for j in xrange(number_of_cells):
                     world_coordinates.append(Coordinates(result.cell_coordinates[i].world_coordinates[j].x, result.cell_coordinates[i].world_coordinates[j].y))
                     map_coordinates.append(Coordinates(result.cell_coordinates[i].map_coordinates[j].x, result.cell_coordinates[i].map_coordinates[j].y))
-                    occupancy_grid = self.mapper.update_map(occupancy_grid, laser_position, scans.range_max, world_coordinates, map_coordinates, scans.ranges[i])
+                    occupancy_grid = self.mapper.update_map(occupancy_grid, laser_position, scan_and_pose.scan.range_max, world_coordinates, map_coordinates, scan_and_pose.scan.ranges[i])
 
             self.publish_updated_map_values(occupancy_grid)
         except rospy.ServiceException:
