@@ -61,7 +61,7 @@ class OccupancyGridMap(object):
 
         '''
         t = 0.
-        t_increment = self.resolution / 10
+        t_increment = self.resolution / 2.
         point_position = Coordinates(position.x, position.y)
         position_inside_map = True
         obstacle_position = Coordinates(self.width, self.height)
@@ -94,7 +94,7 @@ class OccupancyGridMap(object):
 
         '''
         t = 0.
-        t_increment = self.resolution / 10
+        t_increment = self.resolution / 2.
         point_position = Coordinates(position.x, position.y)
         tracing_over = False
         included_cells_map_coordinates = list()
