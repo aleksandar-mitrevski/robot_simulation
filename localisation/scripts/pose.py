@@ -9,6 +9,9 @@ class Pose(object):
     def __copy__(self):
         return Pose(self.x, self.y, self.heading)
 
+    def __deepcopy__(self, memo):
+        return Pose(self.x, self.y, self.heading)
+
     @staticmethod
     def random_pose(neg_x_limit, x_limit, neg_y_limit, y_limit):
         x = uniform(neg_x_limit, x_limit)
