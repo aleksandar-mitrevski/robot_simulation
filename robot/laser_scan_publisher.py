@@ -9,6 +9,7 @@ from geometry_msgs.msg import PoseStamped
 
 from scripts.laser_data import LaserData
 from map.srv import PositionsOfClosestObstacle
+from fault_injector.msg import InjectFault
 from robot.srv import SensorMeasurements, SensorMeasurementsResponse
 from robot.msg import ScanAndPose
 
@@ -30,9 +31,13 @@ class LaserScanNode(object):
         self.front_laser_frame = rospy.get_param('~front_sensor_frame', '/laser_front_copy')
         self.back_laser_frame = rospy.get_param('~back_sensor_frame', '/laser_back_copy')
 
+        self.inject_front_laser_fault = False
+        self.inject_back_laser_fault = False
+
         self.scan_service = rospy.Service('sensor_measurements', SensorMeasurements, self.return_current_scans)
         self.scan_publisher = rospy.Publisher('laser_scan', LaserScan, queue_size=10)
         self.scan_and_pose_publisher = rospy.Publisher('scan_and_pose', ScanAndPose, queue_size=10)
+        rospy.Subscriber('inject_fault', InjectFault, self.inject_fault)
 
         self.tf_listener = tf.TransformListener()
         self.tf_listener.waitForTransform(self.world_frame, self.front_laser_frame, rospy.Time(0), rospy.Duration(10))
@@ -46,6 +51,18 @@ class LaserScanNode(object):
             self.publish_scans(back_laser_data)
             self.publish_scans_and_pose(front_laser_data, front_laser_pose)
             rospy.sleep(0.1)
+
+    def inject_fault(self, msg):
+        if msg.frame_id == self.actual_front_laser_frame or '/' + msg.frame_id == self.actual_front_laser_frame:
+            if msg.inject_fault:
+                self.inject_front_laser_fault = True
+            else:
+                self.inject_front_laser_fault = False
+        elif msg.frame_id == self.actual_back_laser_frame or '/' + msg.frame_id == self.actual_back_laser_frame:
+            if msg.inject_fault:
+                self.inject_back_laser_fault = True
+            else:
+                self.inject_back_laser_fault = False
 
     def return_current_scans(self, request=None):
         front_laser_data, back_laser_data,_,_ = self.read_laser_data()
@@ -128,8 +145,12 @@ class LaserScanNode(object):
             result = proxy(front_laser_data.laser_position[0], front_laser_data.laser_position[1], front_directions_x, front_directions_y)
             if result.success:
                 for i in xrange(self.number_of_readings):
-                    front_laser_data.obstacle_positions[i,0] = result.position_x[i]
-                    front_laser_data.obstacle_positions[i,1] = result.position_y[i]
+                    if not self.inject_front_laser_fault:
+                        front_laser_data.obstacle_positions[i,0] = result.position_x[i]
+                        front_laser_data.obstacle_positions[i,1] = result.position_y[i]
+                    else:
+                        front_laser_data.obstacle_positions[i,0] = front_laser_data.laser_position[0]
+                        front_laser_data.obstacle_positions[i,1] = front_laser_data.laser_position[1]
             else:
                 for i in xrange(self.number_of_readings):
                     front_laser_data.obstacle_positions[i,0] = 2 * front_laser_data.laser_position[0] + self.scanner_max_range
@@ -143,8 +164,12 @@ class LaserScanNode(object):
             result = proxy(back_laser_data.laser_position[0], back_laser_data.laser_position[1], back_directions_x, back_directions_y)
             if result.success:
                 for i in xrange(self.number_of_readings):
-                    back_laser_data.obstacle_positions[i,0] = result.position_x[i]
-                    back_laser_data.obstacle_positions[i,1] = result.position_y[i]
+                    if not self.inject_back_laser_fault:
+                        back_laser_data.obstacle_positions[i,0] = result.position_x[i]
+                        back_laser_data.obstacle_positions[i,1] = result.position_y[i]
+                    else:
+                        back_laser_data.obstacle_positions[i,0] = back_laser_data.laser_position[0]
+                        back_laser_data.obstacle_positions[i,1] = back_laser_data.laser_position[1]
             else:
                 for i in xrange(self.number_of_readings):
                     back_laser_data.obstacle_positions[i,0] = 2 * back_laser_data.laser_position[0] + self.scanner_max_range

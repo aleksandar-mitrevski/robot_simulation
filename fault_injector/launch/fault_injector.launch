@@ -1,0 +1,3 @@
+<launch>
+    <node name="fault_injector_node" pkg="fault_injector" type="fault_injector_node.py" output="screen" />
+</launch>
