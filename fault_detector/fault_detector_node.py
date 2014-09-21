@@ -3,15 +3,48 @@ import rospy
 import tf
 from sensor_msgs.msg import LaserScan
 
-from fault_detector.msg import FaultAlarm
+from fault_detector.msg import FaultReport
+from scripts.fault_detector import FaultDetector
 
 class FaultDetectorNode(object):
     def __init__(self):
+        self.dbn_file_name = rospy.get_param('~dbn_file_name', None)
+        self.fault_detector = FaultDetector(self.dbn_file_name)
+        self.added_sensors = list()
+
         rospy.Subscriber('laser_scan', LaserScan, self.process_measurements)
-        self.fault_alarm_publisher = rospy.Publisher('fault_alarm', FaultAlarm, queue_size=10)
+        self.fault_report_publisher = rospy.Publisher('fault_report', FaultReport, queue_size=10)
 
     def process_measurements(self, scans):
-        pass
+        if scans.header.frame_id not in self.added_sensors:
+            sensor_keys = list()
+            angle = scans.angle_min
+            counter = 0
+            while angle < scans.angle_max:
+                sensor_keys.append((scans.header.frame_id,counter))
+                angle = angle + scans.angle_increment
+                counter = counter + 1
+            self.fault_detector.add_sensor(sensor_keys)
+            self.added_sensors.append(scans.header.frame_id)
+
+        angle = scans.angle_min
+        counter = 0
+        while angle < scans.angle_max:
+            key = (scans.header.frame_id, counter)
+            self.fault_detector.update_belief(key, scans.ranges[counter])
+            current_belief = self.fault_detector.get_current_belief(key)
+            self.publish_failure_report(scans.header.frame_id, counter, current_belief)
+            angle = angle + scans.angle_increment
+            counter = counter + 1
+
+    def publish_failure_report(self, frame_id, scan_id, current_belief):
+        msg = FaultReport()
+        msg.frame_id = frame_id
+        msg.scan_id = scan_id
+        for state in current_belief.keys():
+            msg.states.append(state)
+            msg.probabilities.append(current_belief[state])
+        self.fault_report_publisher.publish(msg)
 
 if __name__ == '__main__':
     rospy.init_node('fault_detector')

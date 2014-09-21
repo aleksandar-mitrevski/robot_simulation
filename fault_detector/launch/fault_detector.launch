@@ -1,0 +1,5 @@
+<launch>
+    <node name="fault_detector_node" pkg="fault_detector" type="fault_detector_node.py" output="screen">
+        <param name="dbn_file_name" type="str" value="$(find fault_detector)/files/sensor_dbn.txt" />
+    </node>
+</launch>
