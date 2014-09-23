@@ -4,12 +4,19 @@ import tf
 from sensor_msgs.msg import LaserScan
 
 from fault_detector.msg import FaultReport
-from scripts.fault_detector import FaultDetector
+from scripts.fault_detector import DBNFaultDetector, TRBMFaultDetector
+from scripts.detector_types import DetectorTypes
 
 class FaultDetectorNode(object):
     def __init__(self):
+        self.fault_detector_type = int(rospy.get_param('~fault_detector_type', '1'))
         self.dbn_file_name = rospy.get_param('~dbn_file_name', None)
-        self.fault_detector = FaultDetector(self.dbn_file_name)
+
+        self.fault_detector = None
+        if self.fault_detector_type == DetectorTypes.DynamicBayesianNetwork:
+            self.fault_detector = DBNFaultDetector(self.dbn_file_name)
+        elif self.fault_detector_type == DetectorTypes.RestrictedBoltzmannMachine:
+            self.fault_detector = TRBMFaultDetector()
         self.added_sensors = list()
 
         rospy.Subscriber('laser_scan', LaserScan, self.process_measurements)

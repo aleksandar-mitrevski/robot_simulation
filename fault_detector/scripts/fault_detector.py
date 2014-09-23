@@ -5,8 +5,9 @@ from libpgm.graphskeleton import GraphSkeleton
 from libpgm.dyndiscbayesiannetwork import DynDiscBayesianNetwork
 
 from sensor_dbn_inference import SensorDbnInferenceEngine
+from sensor_trbm_inference import SensorTRBMInferenceEngine
 
-class FaultDetector(object):
+class DBNFaultDetector(object):
     def __init__(self, dbn_file_name):
         network_file = open(dbn_file_name, 'r')
         network_file_data = eval(network_file.read())
@@ -40,3 +41,6 @@ class FaultDetector(object):
         if measurement > 1e-4:
             return '1'
         return '0'
+
+class TRBMFaultDetector(object):
+    pass
