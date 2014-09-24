@@ -6,6 +6,7 @@ from libpgm.dyndiscbayesiannetwork import DynDiscBayesianNetwork
 
 from sensor_dbn_inference import SensorDbnInferenceEngine
 from sensor_trbm_inference import SensorTRBMInferenceEngine
+from sensor_deep_bn_inference import SensorDeepBNInferenceEngine
 
 class DBNFaultDetector(object):
     def __init__(self, dbn_file_name):
@@ -43,4 +44,8 @@ class DBNFaultDetector(object):
         return '0'
 
 class TRBMFaultDetector(object):
+    pass
+
+
+class DeepBNFaultDetector(object):
     pass
