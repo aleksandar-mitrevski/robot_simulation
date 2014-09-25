@@ -26,6 +26,8 @@ class FaultInjectorNode(object):
             elif command == Commands.RepairAllSensors:
                 self.repair_all_sensors()
             elif command == Commands.Quit:
+                self.repair_all_sensors()
+                rospy.sleep(0.5)
                 shutdown = True
             print 'Faulty sensors: ', self.faulty_sensor_frames
 
@@ -87,6 +89,7 @@ class FaultInjectorNode(object):
                 print 'Faults have not been injected to this sensor; ignoring command'
 
     def repair_all_sensors(self):
+        print 'test'
         for sensor_frame in self.faulty_sensor_frames:
             fault_msg = InjectFault()
             fault_msg.frame_id = sensor_frame
