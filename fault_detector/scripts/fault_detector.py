@@ -42,9 +42,54 @@ class DBNFaultDetector(object):
             return '1'
         return '0'
 
+
 class TRBMFaultDetector(object):
-    pass
+    def __init__(self, weights_file_name_base):
+        self.weights_file_name_base = weights_file_name_base
+        self.inference_engines = dict()
+
+    def add_sensor(self, sensor_keys):
+        for key in sensor_keys:
+            ########################################################
+            # TODO: define a file format for the connection weights 
+            # and read the necessary file(s) here
+            ########################################################
+            #self.inference_engines[key] = SensorTRBMInferenceEngine(self.network)
+
+    def check_measurement(self, sensor_key, measurement):
+        mapped_measurement = self.map_measurement(measurement)
+        return self.inference_engines[sensor_key].detect_fault(mapped_measurement)
+
+    def map_measurement(self, measurement):
+        for i in xrange(len(measurement)):
+            if measurement[i] > 1e-4:
+                measurement[i] = 1
+            else:
+                measurement[i] = 0
+        return measurement
 
 
 class DeepBNFaultDetector(object):
-    pass
+    def __init__(self, weights_file_name_base):
+        self.weights_file_name_base = weights_file_name_base
+        self.inference_engines = dict()
+
+    def add_sensor(self, sensor_keys):
+        for key in sensor_keys:
+            ########################################################
+            # TODO: define a file format for the connection weights 
+            # and read the necessary file(s) here
+            ########################################################
+            #self.inference_engines[key] = SensorDeepBNInferenceEngine(self.network)
+
+    def check_measurement(self, sensor_key, measurement):
+        mapped_measurement = self.map_measurement(measurement)
+        return self.inference_engines[sensor_key].detect_fault(mapped_measurement)
+
+    def map_measurement(self, measurement):
+        for i in xrange(len(measurement)):
+            if measurement[i] > 1e-4:
+                measurement[i] = 1
+            else:
+                measurement[i] = 0
+        return measurement

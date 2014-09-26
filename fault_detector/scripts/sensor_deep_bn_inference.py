@@ -3,7 +3,7 @@ import numpy
 import math
 
 class SensorDeepBNInferenceEngine(DeepBNBase):
-    def __init__(self, number_visible_units, number_hidden_units, fault_threshold, layers=1):
+    def __init__(self, number_visible_units, number_hidden_units, weights, fault_threshold, layers=1):
         """Creates an architecture for a deep belief network.
 
         Keyword arguments:
@@ -23,66 +23,16 @@ class SensorDeepBNInferenceEngine(DeepBNBase):
 
         self.neuron_values.append(numpy.zeros(number_visible_units))
         self.neuron_values.append(numpy.zeros(number_hidden_units[0]))
-        self.biases.append(numpy.random.rand(number_visible_units))
-        self.biases.append(numpy.random.rand(number_hidden_units[0]))
+        self.biases.append(weights['biases'][0])
+        self.biases.append(weights['biases'][1])
 
         #we initialise the connection weights randomly and scale them to the range (0,0.05)
-        self.connection_weights.append(numpy.random.rand(number_visible_units,number_hidden_units[0]) * 0.05)
+        self.connection_weights.append(weights['connection_weights'][0])
 
         for i in xrange(1,layers):
             self.neuron_values.append(numpy.zeros(number_hidden_units[i]))
-            self.biases.append(numpy.random.rand(number_hidden_units[i]))
-
-            weights = numpy.random.rand(number_hidden_units[i-1],number_hidden_units[i]) * 0.05
-            self.connection_weights.append(weights)
-
-    def train(self, data, epochs=100, learning_rate=0.1):
-        """Trains the belief network with a given set of training vectors.
-
-        Keyword arguments:
-        data -- A 'numpy.array' containing data for training the RBM. Each row of the array should be a training vector of dimension 'number_visible_units'.
-        epochs -- The number of iterations of the learning algorithm (default 100).
-        learning_rate -- The algorithm's learning rate (default).
-
-        """
-        number_training_vectors = data.shape[0]
-        for current_layer in xrange(self.layers):
-            for _ in xrange(epochs):
-                for vector in xrange(number_training_vectors):
-                    numpy.copyto(self.neuron_values[0],data[vector,:])
-
-                    #we assign values to all neurons up to the current layer;
-                    #if we are training the first layer, no hidden units will be assigned;
-                    #if we are training an upper layer, then hidden neurons below it will be assigned values
-                    for layer in xrange(current_layer):
-                        for neuron in xrange(self.number_hidden_units[layer]):
-                            prob = self._logistic(numpy.sum(self.connection_weights[layer][:,neuron] * self.neuron_values[layer]) + self.biases[layer+1][neuron])
-                            threshold = numpy.random.rand()
-                            if prob > threshold:
-                                self.neuron_values[layer+1][neuron] = 1.
-                            else:
-                                self.neuron_values[layer+1][neuron] = 0.
-
-                    #we sample from the current layer of the network
-                    layer_sample = self._sample_layer(current_layer, 1)
-
-                    #we update the connection weights between the visible and hidden units of the current layer
-                    for i in xrange(self.connection_weights[current_layer].shape[0]):
-                        #we update the bias values of the visible units in the current visible layer
-                        visible_bias_delta = learning_rate * (self.neuron_values[current_layer][i] - layer_sample[i])
-                        self.biases[current_layer][i] = self.biases[current_layer][i] + visible_bias_delta
-
-                        for j in xrange(self.connection_weights[current_layer].shape[1]):
-                            data_expectation = self._logistic(numpy.sum(self.connection_weights[current_layer][:,j] * self.neuron_values[current_layer]) + self.biases[current_layer+1][j])
-                            sample_expectation = self._logistic(numpy.sum(self.connection_weights[current_layer][:,j] * layer_sample) + self.biases[current_layer+1][j])
-
-                            #we update the connection weight between the i-th visible unit and the j-th hidden unit
-                            weight_change_delta = learning_rate * (data_expectation * self.neuron_values[current_layer][i] - sample_expectation * layer_sample[i])
-                            self.connection_weights[current_layer][i,j] = self.connection_weights[current_layer][i,j] + weight_change_delta
-
-                            #we update the bias values of the hidden units in the current visible layer
-                            hidden_bias_delta = learning_rate * (data_expectation - sample_expectation)
-                            self.biases[current_layer+1][j] = self.biases[current_layer+1][j] + hidden_bias_delta
+            self.biases.append(weights['biases'][i+1])
+            self.connection_weights.append(weights['connection_weights'][i])
 
     def detect_fault(self, vector):
         sample = self.sample_network(vector)
@@ -128,48 +78,6 @@ class SensorDeepBNInferenceEngine(DeepBNBase):
                     self.neuron_values[layer][neuron] = 0.
 
         return numpy.array(self.neuron_values[0])
-
-    def _sample_layer(self, layer, k):
-        """Samples a visible vector at the layer-th layer of the network.
-        Uses Contrastive Divergence for sampling the values.
-
-        Keyword arguments:
-        layer -- The layer at which we want to sample.
-        k -- The number of samples created by Contrastive Divergence before a sample is accepted.
-
-        Returns:
-        visible_units -- A 'numpy.array' containing the sampled values.
-
-        """
-        visible_units = numpy.array(self.neuron_values[layer])
-        hidden_units = numpy.array(self.neuron_values[layer+1])
-
-        visible_biases = numpy.array(self.biases[layer])
-        hidden_biases = numpy.array(self.biases[layer+1])
-
-        number_visible_units = len(visible_units)
-        number_hidden_units = len(hidden_units)
-
-        for sample in xrange(k):
-            for neuron in xrange(number_hidden_units):
-                prob = self._logistic(numpy.sum(self.connection_weights[layer][:,neuron] * visible_units) + hidden_biases[neuron])
-                threshold = numpy.random.rand()
-
-                if prob > threshold:
-                    hidden_units[neuron] = 1.
-                else:
-                    hidden_units[neuron] = 0.
-
-            for neuron in xrange(number_visible_units):
-                prob = self._logistic(numpy.sum(self.connection_weights[layer][neuron,:] * hidden_units) + visible_biases[neuron])
-                threshold = numpy.random.rand()
-
-                if prob > threshold:
-                    visible_units[neuron] = 1.
-                else:
-                    visible_units[neuron] = 0.
-
-        return visible_units
 
     def _distance(self, vec1, vec2):
         dimension = len(vec1)
