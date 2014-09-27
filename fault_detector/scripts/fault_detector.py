@@ -5,8 +5,8 @@ from libpgm.graphskeleton import GraphSkeleton
 from libpgm.dyndiscbayesiannetwork import DynDiscBayesianNetwork
 
 from sensor_dbn_inference import SensorDbnInferenceEngine
-from sensor_trbm_inference import SensorTRBMInferenceEngine
-from sensor_deep_bn_inference import SensorDeepBNInferenceEngine
+from sensor_trbm_inference import SensorTRBMInferenceEngine, SensorTRBMContinuousInferenceEngine
+from sensor_deep_bn_inference import SensorDeepBNInferenceEngine, SensorDeepBNContinuousInferenceEngine
 
 class DBNFaultDetector(object):
     def __init__(self, dbn_file_name):
@@ -69,6 +69,32 @@ class TRBMFaultDetector(object):
         return measurement
 
 
+class TRBMContinuousFaultDetector(object):
+    def __init__(self, weights_file_name_base):
+        self.weights_file_name_base = weights_file_name_base
+        self.inference_engines = dict()
+
+    def add_sensor(self, sensor_keys):
+        for key in sensor_keys:
+            ########################################################
+            # TODO: define a file format for the connection weights 
+            # and read the necessary file(s) here
+            ########################################################
+            #self.inference_engines[key] = SensorTRBMContinuousInferenceEngine(self.network)
+
+    def check_measurement(self, sensor_key, measurement):
+        mapped_measurement = self.map_measurement(measurement)
+        return self.inference_engines[sensor_key].detect_fault(mapped_measurement)
+
+    def map_measurement(self, measurement):
+        for i in xrange(len(measurement)):
+            if measurement[i] > 1e-4:
+                measurement[i] = 1
+            else:
+                measurement[i] = 0
+        return measurement
+
+
 class DeepBNFaultDetector(object):
     def __init__(self, weights_file_name_base):
         self.weights_file_name_base = weights_file_name_base
@@ -81,6 +107,32 @@ class DeepBNFaultDetector(object):
             # and read the necessary file(s) here
             ########################################################
             #self.inference_engines[key] = SensorDeepBNInferenceEngine(self.network)
+
+    def check_measurement(self, sensor_key, measurement):
+        mapped_measurement = self.map_measurement(measurement)
+        return self.inference_engines[sensor_key].detect_fault(mapped_measurement)
+
+    def map_measurement(self, measurement):
+        for i in xrange(len(measurement)):
+            if measurement[i] > 1e-4:
+                measurement[i] = 1
+            else:
+                measurement[i] = 0
+        return measurement
+
+
+class DeepBNContinuousFaultDetector(object):
+    def __init__(self, weights_file_name_base):
+        self.weights_file_name_base = weights_file_name_base
+        self.inference_engines = dict()
+
+    def add_sensor(self, sensor_keys):
+        for key in sensor_keys:
+            ########################################################
+            # TODO: define a file format for the connection weights 
+            # and read the necessary file(s) here
+            ########################################################
+            #self.inference_engines[key] = SensorDeepBNContinuousInferenceEngine(self.network)
 
     def check_measurement(self, sensor_key, measurement):
         mapped_measurement = self.map_measurement(measurement)
