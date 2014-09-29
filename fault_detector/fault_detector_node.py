@@ -3,11 +3,7 @@ import rospy
 import tf
 from sensor_msgs.msg import LaserScan
 
-<<<<<<< HEAD
 from fault_detector.msg import FaultReport, FaultAlarm
-=======
-from fault_detector.msg import FaultReport
->>>>>>> 15ca4c1aec71ab2c7e4964f1ca7968666157651c
 from scripts.fault_detector import *
 from scripts.detector_types import DetectorTypes
 
