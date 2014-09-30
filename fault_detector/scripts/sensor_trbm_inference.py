@@ -33,7 +33,7 @@ class SensorTRBMInferenceEngine(TRBMBase):
 
             self.visible_to_visible_bias.append(weights['visible_to_visible_bias'][order])
             self.visible_to_hidden_bias.append(weights['visible_to_hidden_bias'][order])
-            self.hidden_to_hidden_bias.append(weights['hidden_to_hidden_bias'][order])s
+            self.hidden_to_hidden_bias.append(weights['hidden_to_hidden_bias'][order])
 
     def detect_fault(self, current_vector, initial_data=None):
         sample = self.sample_network(current_vector, initial_data)
@@ -152,7 +152,7 @@ class SensorTRBMContinuousInferenceEngine(TRBMBase):
 
             self.visible_to_visible_bias.append(weights['visible_to_visible_bias'][order])
             self.visible_to_hidden_bias.append(weights['visible_to_hidden_bias'][order])
-            self.hidden_to_hidden_bias.append(weights['hidden_to_hidden_bias'][order])s
+            self.hidden_to_hidden_bias.append(weights['hidden_to_hidden_bias'][order])
 
     def detect_fault(self, current_vector, initial_data=None):
         sample = self.sample_network(current_vector, initial_data)
