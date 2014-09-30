@@ -49,7 +49,8 @@ class TRBMFaultDetector(object):
         self.inference_engines = dict()
 
     def add_sensor(self, sensor_keys):
-        for key in sensor_keys:
+        pass
+        #for key in sensor_keys:
             ########################################################
             # TODO: define a file format for the connection weights 
             # and read the necessary file(s) here
@@ -75,7 +76,8 @@ class TRBMContinuousFaultDetector(object):
         self.inference_engines = dict()
 
     def add_sensor(self, sensor_keys):
-        for key in sensor_keys:
+        pass
+        #for key in sensor_keys:
             ########################################################
             # TODO: define a file format for the connection weights 
             # and read the necessary file(s) here
@@ -101,7 +103,8 @@ class DeepBNFaultDetector(object):
         self.inference_engines = dict()
 
     def add_sensor(self, sensor_keys):
-        for key in sensor_keys:
+        pass
+        #for key in sensor_keys:
             ########################################################
             # TODO: define a file format for the connection weights 
             # and read the necessary file(s) here
@@ -127,7 +130,8 @@ class DeepBNContinuousFaultDetector(object):
         self.inference_engines = dict()
 
     def add_sensor(self, sensor_keys):
-        for key in sensor_keys:
+        pass
+        #for key in sensor_keys:
             ########################################################
             # TODO: define a file format for the connection weights 
             # and read the necessary file(s) here
