@@ -30,6 +30,7 @@ class LaserScanNode(object):
         self.actual_back_laser_frame = rospy.get_param('~back_sensor_frame', '/laser_back')
         self.front_laser_frame = rospy.get_param('~front_sensor_frame', '/laser_front_copy')
         self.back_laser_frame = rospy.get_param('~back_sensor_frame', '/laser_back_copy')
+        self.log_file_directory = rospy.get_param('~log_file_directory', None)
 
         self.inject_front_laser_fault = False
         self.inject_back_laser_fault = False
@@ -49,6 +50,8 @@ class LaserScanNode(object):
             front_laser_data, back_laser_data, front_laser_pose, back_laser_pose = self.read_laser_data()
             self.publish_scans(front_laser_data)
             self.publish_scans(back_laser_data)
+            self.log_scans(front_laser_data)
+            self.log_scans(back_laser_data)
             self.publish_scans_and_pose(front_laser_data, front_laser_pose)
             rospy.sleep(0.1)
 
@@ -70,8 +73,8 @@ class LaserScanNode(object):
         front_scan_msg = self.generate_laser_msg(front_laser_data)
         scan_msgs.append(front_scan_msg)
 
-        back_scan_msg = self.generate_laser_msg(back_laser_data)
-        scan_msgs.append(back_scan_msg)
+        #back_scan_msg = self.generate_laser_msg(back_laser_data)
+        #scan_msgs.append(back_scan_msg)
 
         response = SensorMeasurementsResponse()
         response.scans = scan_msgs
@@ -182,6 +185,13 @@ class LaserScanNode(object):
     def publish_scans(self, laser_data):
         laser_scan_msg = self.generate_laser_msg(laser_data)
         self.scan_publisher.publish(laser_scan_msg)
+
+    def log_scans(self, laser_data):
+        ranges = self.calculate_ranges(laser_data)
+        file_handle = open(self.log_file_directory + '/' + laser_data.frame_id + '.log', 'a')
+        for i in xrange(len(ranges)-1):
+            file_handle.write(str(ranges[i]) + ' ')
+        file_handle.write(str(ranges[len(ranges)-1]) + '\n')
 
     def publish_scans_and_pose(self, laser_data, pose):
         msg = self.generate_scan_and_pose_msg(laser_data, pose)

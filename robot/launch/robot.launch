@@ -21,11 +21,12 @@
     <node name="world_frame_publisher" pkg="robot" type="world_frame_publisher.py" />
 
     <node name="laser_scan_publisher" pkg="robot" type="laser_scan_publisher.py" output="screen">
-        <param name="number_of_readings" type="int" value="41" />
+        <param name="number_of_readings" type="int" value="7" />
         <param name="scanner_min_angle" type="double" value="-1.57" />
         <param name="scanner_max_angle" type="double" value="1.57" />
-        <param name="scanner_angle_increment" type="double" value="0.0785" />
+        <param name="scanner_angle_increment" type="double" value="0.5233" />
         <param name="noise_standard_deviation" type="double" value="0.0001" />
+        <param name="log_file_directory" type="str" value="$(find robot)/logs" />
     </node>
 
     <!--<node name="goal_manager" pkg="robot" type="goal_manager.py" output="screen">
@@ -34,5 +35,5 @@
 
     <include file="$(find map)/launch/map.launch" />
     <include file="$(find localisation)/launch/localisation.launch" />
-    <include file="$(find mapping)/launch/mapping.launch" />
+    <!--<include file="$(find mapping)/launch/mapping.launch" />-->
 </launch>
