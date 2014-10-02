@@ -45,9 +45,15 @@ class FaultDetectorNode(object):
         counter = 0
         while angle < scans.angle_max:
             key = (scans.header.frame_id, counter)
-            self.fault_detector.update_belief(key, scans.ranges[counter])
-            current_belief = self.fault_detector.get_current_belief(key)
-            self.publish_failure_report(scans.header.frame_id, counter, current_belief)
+
+            if self.fault_detector == DetectorTypes.DynamicBayesianNetwork:
+                self.fault_detector.update_belief(key, scans.ranges[counter])
+                current_belief = self.fault_detector.get_current_belief(key)
+                self.publish_failure_report(scans.header.frame_id, counter, current_belief)
+            else:
+                faulty_measurement = self.fault_detector.check_measurement(key, scans.ranges[counter])
+                self.publish_fault_alarm(scans.header.frame_id, counter, faulty_measurement)
+
             angle = angle + scans.angle_increment
             counter = counter + 1
 
@@ -59,6 +65,13 @@ class FaultDetectorNode(object):
             msg.states.append(state)
             msg.probabilities.append(current_belief[state])
         self.fault_report_publisher.publish(msg)
+
+    def publish_fault_alarm(self, frame_id, scan_id, fault):
+        msg = FaultAlarm()
+        msg.frame_id = frame_id
+        msg.scan_id = scan_id
+        msg.fault = fault
+        self.fault_alarm_publisher.publish(msg)
 
 if __name__ == '__main__':
     rospy.init_node('fault_detector')
