@@ -46,7 +46,7 @@ class FaultDetectorNode(object):
         while angle < scans.angle_max:
             key = (scans.header.frame_id, counter)
 
-            if self.fault_detector == DetectorTypes.DynamicBayesianNetwork:
+            if self.fault_detector_type == DetectorTypes.DynamicBayesianNetwork:
                 self.fault_detector.update_belief(key, scans.ranges[counter])
                 current_belief = self.fault_detector.get_current_belief(key)
                 self.publish_failure_report(scans.header.frame_id, counter, current_belief)
