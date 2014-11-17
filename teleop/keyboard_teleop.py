@@ -11,6 +11,7 @@ class KeyboardTeleopNode(object):
         self.angular_velocity = float(rospy.get_param('angular_velocity', '0.01')) 
 
         self.velocity_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=5)
+        self.map_velocity_publisher = rospy.Publisher('motion_command', Twist, queue_size=5)
 
         shutdown = False
         self.print_instructions()
@@ -35,6 +36,20 @@ class KeyboardTeleopNode(object):
         return ch
 
     def send_motion_command(self, character):
+        '''Creates and sends a velocity message based on the value of 'character'.
+        If 'character' is 'q', sends an empty velocity command.
+
+        Keyword arguments:
+        character -- A character denoting a motion command.
+                     'w' describes forward motion, 's' backward motion,
+                     'e' a counterclocwise rotation, 'r' a clockwise rotation,
+                     and 'q' denotes that we want to stop controlling the motion
+                     of the robot, so sends an empty velocity command.
+
+        Returns:
+        shutdown -- True if the value of 'character' is 'q' and False otherwise.
+
+        '''
         velocity = Twist()
         shutdown = False
 
