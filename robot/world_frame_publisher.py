@@ -4,6 +4,11 @@ import tf
 from geometry_msgs.msg import Twist
 
 class WorldFrameNode(object):
+    '''Manages the position of a robot in a ground truth frame.
+
+    Author -- Aleksandar Mitrevski
+
+    '''
     def __init__(self):
         self.x = 0.
         self.y = 0.
@@ -18,6 +23,8 @@ class WorldFrameNode(object):
             self.update_robot_position()
 
     def update_robot_position(self, velocity=None):
+        '''Updates the pose of a robot in the ground truth frame.
+        '''
         linear_x_velocity = 0.
         linear_y_velocity = 0.
         angular_velocity = 0.
@@ -37,5 +44,4 @@ if __name__ == '__main__':
 
     try:
         node = WorldFrameNode()
-        rospy.spin()
     except rospy.ROSInterruptException: pass
