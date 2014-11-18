@@ -2,6 +2,12 @@ from math import cos, sin, atan2, copysign
 from velocity import Velocity
 
 class MotionController(object):
+    '''Defines a utility class for controlling the motion of a robot
+    when it's moving freely to a desired goal location.
+
+    Author -- Aleksandar Mitrevski
+
+    '''
     def __init__(self, velocity=None):
         if velocity != None:
             self.velocity = Velocity(velocity.linear_x, velocity.linear_y, velocity.angular)
@@ -43,7 +49,7 @@ class MotionController(object):
                 velocity = Velocity(linear_x_velocity, linear_y_velocity, 0.)
 
             if self.goal_location_reached:
-                if abs(current_angle - goal_angle) < 1e-2:
+                if abs(current_angle - goal_angle) < 0.1:
                     goal_reached = True
                     self.reset_states()
                 else:

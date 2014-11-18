@@ -4,11 +4,18 @@ from velocity import Velocity
 from enums import Directions
 
 class ObstacleFollower(object):
+    '''Defines a utility class for controlling the motion of a robot
+    when it's in an obstacle following mode.
+
+    Author -- Aleksandar Mitrevski
+
+    '''
     def __init__(self, velocity=None, safe_distance=0.1, direction=Directions.Left):
         '''
         Keyword arguments:
-        velocity -- A 'Velocity' object containing linear and angular velocities of the robot,
-        safe_distance -- Safe distance from the obstacle.
+        velocity -- A 'Velocity' object containing linear and angular velocities of the robot (default None).
+        safe_distance -- Safe distance from the obstacle in meters (default 0.1m).
+        direction -- A 'Directions' value indicating whether the robot is in a right or left obstacle following mode (default Left).
 
         '''
         if velocity != None:
@@ -17,9 +24,20 @@ class ObstacleFollower(object):
             self.velocity = Velocity()
         self.safe_distance = safe_distance
         self.direction = direction
+
+        #used for advancing the position of the robot
+        #even when it's following an obstacle
         self.tic = True
 
     def calculate_velocity(self, current_pose, measurements):
+        '''Calculates an appropriate velocity for following an obstacle
+        given the current robot pose and the set of distance measurements.
+
+        Keyword arguments:
+        current_pose -- A 'geometry.Pose' object.
+        measurements -- A 'measurements.SensorMeasurements' object.
+
+        '''
         heading_angle = self.normalise_angle(current_pose.angle)
 
         diagonal = 0.
@@ -51,6 +69,7 @@ class ObstacleFollower(object):
         velocity = Velocity()
 
         if not safe_front or not safe_diagonal:
+            #rotates the robot if either the front of the diagonal is unsafe
             if self.direction == Directions.Left:
                 velocity = Velocity(0., 0., self.velocity.angular)
             else:
@@ -72,6 +91,9 @@ class ObstacleFollower(object):
                     velocity = Velocity(0., 0., self.velocity.angular)
 
             if self.tic:
+                #we overwrite the previously calculated velocity
+                #at each second call of the function because we don't want
+                #the robot to get stuck in rotation mode if it is far from an obstacle
                 velocity = Velocity(self.velocity.linear_x * cos(heading_angle), self.velocity.linear_y * sin(heading_angle), 0.)
                 self.tic = False
             else:

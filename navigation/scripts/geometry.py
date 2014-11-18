@@ -1,6 +1,11 @@
 from math import sqrt, sin, atan2, acos
 
 class VectorBase(object):
+    '''Defines a base class for points and vectors.
+
+    Author -- Aleksandar Mitrevski
+
+    '''
     def __init__(self, x=0., y=0.):
         self.x = x
         self.y = y
@@ -33,6 +38,11 @@ class VectorBase(object):
         return self.norm() < 1e-5
 
 class Pose(VectorBase):
+    '''Defines a structure for representing poses.
+
+    Author -- Aleksandar Mitrevski
+
+    '''
     def __init__(self, x=0., y=0., angle=0.):
         super(Pose, self).__init__(x, y)
         self.angle = angle
@@ -50,6 +60,11 @@ class Pose(VectorBase):
         return new_pose
 
 class Point(VectorBase):
+    '''Defines a structure for representing points.
+
+    Author -- Aleksandar Mitrevski
+
+    '''
     def __init__(self, x=0., y=0.):
         super(Point, self).__init__(x, y)
 
@@ -61,6 +76,8 @@ class Point(VectorBase):
 
     @staticmethod
     def collinear(point1, point2, point3):
+        '''Returns True if the three points are collinear and False otherwise.
+        '''
         diff_12 = point1 - point2
         diff_13 = point3 - point2
 

@@ -18,6 +18,9 @@ from navigation.srv import GoToGoalPosition, GoToGoalPositionResponse
 from navigation.msg import GoToGoalResponse
 
 class MotionControllerNode(object):
+    '''
+    Author -- Aleksandar Mitrevski
+    '''
     def __init__(self):
         self.x = 0.
         self.y = 0.
@@ -48,6 +51,9 @@ class MotionControllerNode(object):
             self.publish_transform()
 
     def move_robot(self, velocity):
+        '''Called when a 'cmd_vel' message is received.
+        Moves the robot with the given velocity command.
+        '''
         actual_velocity = Velocity()
         if abs(velocity.linear.x) > 0:
             actual_velocity.linear_x = velocity.linear.x * cos(self.heading)
@@ -72,6 +78,18 @@ class MotionControllerNode(object):
         return response
 
     def go_to_goal(self, goal):
+        '''Moves the robot to 'goal', switching between free motion
+        and obstacle following as appropriate.
+
+        TODO: there is currently no way to check if a goal is unreachable; that needs to be changed.
+
+        Keyword arguments:
+        goal -- A 'PoseStamped' object.
+
+        Returns:
+        goal_unreachable -- A flag indicating whether the goal could be reached.
+
+        '''
         goal_reached = False
         goal_unreachable = False
         obstacle_following = False
@@ -114,12 +132,26 @@ class MotionControllerNode(object):
         return goal_unreachable
 
     def get_scans(self, scans):
+        '''Saves 'scans' into either 'self.front_scans' or 'self.back_scans'
+        depending on the name of the frame in 'scans'. Called when a 'LaserScan' message is received.
+
+        Keyword arguments:
+        scans -- A 'LaserScan' message.
+
+        '''
         if scans.header.frame_id == self.front_sensor_frame:
             self.front_scans = scans
         else:
             self.back_scans = scans
 
     def map_scans(self):
+        '''Generates a 'measurements.SensorMeasurements' object from the
+        current set of sensor measurements saved in 'self.front_scans' and 'self.back_scans'.
+
+        Returns:
+        measurements -- A 'measurements.SensorMeasurements' object.
+
+        '''
         measurements = SensorMeasurements()
 
         front_scan_index = 0
@@ -145,7 +177,7 @@ class MotionControllerNode(object):
         return measurements
 
     def publish_velocity(self, velocity):
-        '''Publishes the actual motion command in terms of the map in case it is being used in a simulation.
+        '''Publishes the actual motion command with respect to the map.
         '''
         velocity_msg = Twist()
         velocity_msg.linear.x = velocity.linear_x
@@ -154,6 +186,8 @@ class MotionControllerNode(object):
         self.map_velocity_publisher.publish(velocity_msg)
 
     def publish_transform(self, velocity=None):
+        '''Updates the transform from 'odom' to 'base_link' based on the given velocity command.
+        '''
         linear_x_velocity = 0.
         linear_y_velocity = 0.
         angular_velocity = 0.
