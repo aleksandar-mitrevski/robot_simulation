@@ -6,6 +6,11 @@ from coordinates import Coordinates
 from mapping_parameters import MappingParameters
 
 class Mapper(object):
+    '''Defines a utility for performing map updates.
+
+    Author -- Aleksandar Mitrevski
+
+    '''
     def __init__(self, mapping_params):
         self.mapping_params = copy(mapping_params)
 

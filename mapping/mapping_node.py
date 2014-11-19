@@ -14,9 +14,18 @@ from map.srv import GetMap, RayTracedCells
 from robot.msg import ScanAndPose
 
 class MappingNode(object):
+    '''Defines a node that takes care of updating and publishing a map.
+
+    Author -- Aleksandar Mitrevski
+
+    '''
     def __init__(self):
         self.map_frame = rospy.get_param('map_frame', '/map')
+
+        #an estimate of a usual obstacle thickness (in meters)
         self.obstacle_thickness = float(rospy.get_param('~obstacle_thickness', '0.5'))
+
+        #increments used for updating the occupancy confidence of individual cells
         self.log_occ_prob_increment = float(rospy.get_param('~log_occ_prob_increment', '0.040005'))
         self.log_free_prob_increment = float(rospy.get_param('~log_free_prob_increment', '-0.040005'))
 
@@ -27,6 +36,22 @@ class MappingNode(object):
         self.mapper = Mapper(MappingParameters(self.obstacle_thickness, self.log_occ_prob_increment, self.log_free_prob_increment))
 
     def update_map(self, scan_and_pose):
+        '''Updates the occupancy values of the map given the scans in 'scan_and_pose'.
+        Called whenever a 'ScanAndPose' message is received.
+
+        Keyword arguments:
+        scan_and_pose -- A 'ScanAndPose' message.
+
+        '''
+        #################################################################
+        #commented out because the scans and poses were not synchronised
+        #################################################################
+        #self.tf_listener.waitForTransform(self.map_frame, scans.header.frame_id, scans.header.stamp, rospy.Duration(10))
+        #try:
+        #    (translation, quat_rotation) = self.tf_listener.lookupTransform(self.map_frame, scans.header.frame_id, scans.header.stamp)
+        #except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
+        #    return
+
         laser_position = Coordinates(scan_and_pose.pose.pose.position.x, scan_and_pose.pose.pose.position.y)
         laser_quaternion = [scan_and_pose.pose.pose.orientation.x, scan_and_pose.pose.pose.orientation.y, scan_and_pose.pose.pose.orientation.z, scan_and_pose.pose.pose.orientation.w]
         laser_euler_rotation = tf.transformations.euler_from_quaternion(laser_quaternion)
@@ -72,12 +97,16 @@ class MappingNode(object):
             return
 
     def publish_updated_map_values(self, occupancy_grid):
+        '''Publishes the current version of the occupancy grid.
+        '''
         occupancy_grid_msg = OccupancyGridFloat()
         occupancy_grid_msg.data = list(occupancy_grid.flatten())
 
         self.map_values_update_publisher.publish(occupancy_grid_msg)
 
     def normalise_angle(self, angle):
+        '''Converts 'angle' to the range [0,2*pi).
+        '''
         if angle < 0.:
             angle = angle + 2 * 3.14
         return angle

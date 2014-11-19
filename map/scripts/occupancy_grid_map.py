@@ -4,15 +4,20 @@ from coordinates import Coordinates
 import Image
 
 class OccupancyGridMap(object):
+    '''Defines a structure for storing an occupancy grid map.
+
+    Author -- Aleksandar Mitrevski
+
+    '''
     def __init__(self, width=10., height=10., resolution=0.1, map_image_file_name=None):
         '''Initialises an occupancy grid map with x coordinates in the range
         (-width/2,width/2) and y coordinates in the range (-height/2,height/2).
 
         Keyword arguments:
-        map_image_file -- Name of a grayscale image that contains a map (default None, in which case an empty map with unknown fields is created)
-        width -- Map width in meters (default 10.)
-        height -- Map height in meters (default 10.)
-        resolution -- Map resolution in meters (default 0.1)
+        width -- Map width in meters (default 10.).
+        height -- Map height in meters (default 10.).
+        resolution -- Map resolution in meters (default 0.1).
+        map_image_file -- Name of a grayscale image that contains a map (default None, in which case an empty map with unknown occupancy values is initialised).
 
         '''
         self.width = width
@@ -49,19 +54,20 @@ class OccupancyGridMap(object):
                 self.occupancy_grid[i,j] = values[i,j]
 
     def find_closest_obstacle(self, position, direction):
-        '''Finds the coordinates of the obstacle closest to a range scanner at a given position and in a certain direction.
+        '''Finds the coordinates of the obstacle closest to a range scanner at the given position and direction.
 
         Keyword arguments:
         position -- A 'Coordinates' object representing the position of a range sensor.
         direction -- A 'Coordinates' object representing the direction vector of the sensor's ray.
 
         Returns:
-        obstacle_position -- A 'Coordinates' object representing the map coordinates of the closest obstacle. The coordinates (width,height) are returned if the measurement falls outside the map.
+        obstacle_position -- A 'Coordinates' object representing the map coordinates of the closest obstacle.
+                             The coordinates (width,height) are returned if the measurement falls outside the map.
         position_inside_map -- True if the closest obstacle is inside the map and False otherwise.
 
         '''
         t = 0.
-        t_increment = self.resolution / 2.
+        t_increment = self.resolution
         point_position = Coordinates(position.x, position.y)
         position_inside_map = True
         obstacle_position = Coordinates(self.width, self.height)
@@ -80,8 +86,8 @@ class OccupancyGridMap(object):
         return obstacle_position, position_inside_map
 
     def find_ray_traced_cells(self, position, direction, distance):
-        '''Finds the coordinates of the cells traced by a range scanner at a given position
-        and in a certain direction, given a measurement of a certain distance.
+        '''Finds the coordinates of the cells traced by a range scanner at the given position
+        and direction, given a measurement of a certain distance.
 
         Keyword arguments:
         position -- A 'Coordinates' object representing the position of a range sensor.
@@ -166,7 +172,8 @@ class OccupancyGridMap(object):
         return x < self.x_boundaries[0] or x > self.x_boundaries[1] or y < self.y_boundaries[0] or y > self.y_boundaries[1]
 
     def _read_map(self, map_image_file_name):
-        '''Reads a map from an image file.
+        '''Reads a map from an image file and saves the values in 'self.occupancy_grid'.
+        Raises an IOError if the given file cannot be read.
 
         Keyword arguments:
         map_image_file_name -- Name of a grayscale image representing a map.
