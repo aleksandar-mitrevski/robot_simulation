@@ -1,4 +1,10 @@
 class MotionModelNoiseParameters(object):
+    '''Defines a structure for storing motion model parameters
+    used by a particle filter.
+
+    Author -- Aleksandar Mitrevski
+
+    '''
     def __init__(self, alpha1, alpha2, alpha3, alpha4):
         self.alpha1 = alpha1
         self.alpha2 = alpha2
@@ -9,6 +15,12 @@ class MotionModelNoiseParameters(object):
         return MotionModelNoiseParameters(self.alpha1, self.alpha2, self.alpha3, self.alpha4)
 
 class MeasurementModelParameters(object):
+    '''Defines a structure for storing measurement model parameters
+    used by a particle filter.
+
+    Author -- Aleksandar Mitrevski
+
+    '''
     def __init__(self, min_range, max_range, hit_sigma, max_measurements_counter_tolerance):
         self.min_range = min_range
         self.max_range = max_range
@@ -19,6 +31,11 @@ class MeasurementModelParameters(object):
         return MeasurementModelParameters(self.min_range, self.max_range, self.hit_sigma, self.max_measurements_counter_tolerance)
 
 class FilterParameters(object):
+    '''Defines a structure for various parameters used by a particle filter.
+
+    Author -- Aleksandar Mitrevski
+
+    '''
     def __init__(self, neg_x_limit, x_limit, neg_y_limit, y_limit, number_of_particles, number_of_random_particles, weight_sum_tolerance):
         self.neg_x_limit = neg_x_limit
         self.x_limit = x_limit

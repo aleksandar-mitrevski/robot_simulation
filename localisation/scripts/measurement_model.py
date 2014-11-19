@@ -3,6 +3,11 @@ from copy import copy
 from pose import Pose
 
 class MeasurementModel(object):
+    '''Defines a utility for sampling a measurement model.
+
+    Author -- Aleksandar Mitrevski
+
+    '''
     def __init__(self, model_params, measurement_generator_callback):
         self.model_params = copy(model_params)
         self.measurement_generator_callback = measurement_generator_callback

@@ -7,6 +7,11 @@ from velocity import Velocity
 from filter_parameters import MotionModelNoiseParameters
 
 class MotionModel(object):
+    '''Defines a utility for sampling a motion model.
+
+    Author -- Aleksandar Mitrevski
+
+    '''
     def __init__(self, noise_params):
         self.noise_params = copy(noise_params)
 
