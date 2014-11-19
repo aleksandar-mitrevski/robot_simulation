@@ -17,8 +17,18 @@ class FaultTypes(object):
     Unknown = 3
 
 class FaultInjectorNode(object):
+    '''Defines a node that sends commands for injecting sensor faults.
+    The current version allows injecting both permanent and transient faults.
+
+    Author -- Aleksandar Mitrevski
+
+    '''
     def __init__(self):
+        #stores names of sensor frames representing sensors with injected faults
         self.faulty_sensor_frames = list()
+
+        #a list of sensor frames that will be 'repaired', i.e. faults
+        #will stop being injected to the respective sensors
         self.sensor_frames_to_remove = list()
         self.fault_message_publisher = rospy.Publisher('inject_fault', InjectFault, queue_size=10)
 
@@ -46,10 +56,10 @@ class FaultInjectorNode(object):
             print 'Faulty sensors: ', self.faulty_sensor_frames
             rospy.sleep(0.5)
 
-    def inject_fault(self, request):
-        if request.frame_id in self.faulty_sensor_frames:
-            return InjectFaultResponse(True)
-        return InjectFaultResponse(False)
+    #~ def inject_fault(self, request):
+        #~ if request.frame_id in self.faulty_sensor_frames:
+            #~ return InjectFaultResponse(True)
+        #~ return InjectFaultResponse(False)
 
     def print_instructions(self):
         print 'Use the following keys:\ni for injecting a fault\nr for "repairing" the sensor (removing the fault)\na for repairing all sensors\nq to quit\n'
@@ -67,6 +77,8 @@ class FaultInjectorNode(object):
         return ch
 
     def read_command(self, character):
+        '''Returns an appropriate 'Commands' value based on the value of the input character.
+        '''
         if character == 'i':
             return Commands.InjectFault
         elif character == 'r':
@@ -80,6 +92,8 @@ class FaultInjectorNode(object):
         return Commands.Unknown
 
     def read_fault_type(self, character):
+        '''Returns an appropriate 'FaultTypes' based on the value of the input character.
+        '''
         if character == 'p':
             return FaultTypes.Permanent
         elif character == 't':
@@ -89,6 +103,16 @@ class FaultInjectorNode(object):
         return FaultTypes.Permanent
 
     def manage_sensor(self, command, fault_type=None):
+        '''Publishes 'InjectFault' messages for injecting faults to sensors
+        or repairing sensor faults based on 'command' and 'fault_type'.
+        The sensor that should be repeared/to which a fault will be injected
+        is provided by the user from the command line.
+
+        Keyword arguments:
+        command -- A 'Commands' value.
+        fault_type -- A 'FaultTypes' value (default None, which means that we are repairing sensors).
+
+        '''
         sensor_frame = raw_input('Please enter the name of a sensor frame\n')
         if command == Commands.InjectFault:
             if sensor_frame not in self.faulty_sensor_frames:
@@ -115,6 +139,9 @@ class FaultInjectorNode(object):
                 print 'Faults have not been injected to this sensor; ignoring command'
 
     def repair_transient_faults(self):
+        '''Repairs all sensors that are currently in 'self.sensor_frames_to_remove'
+        by publishing an appropriate 'InjectFault' message.
+        '''
         for sensor_frame in self.sensor_frames_to_remove:
             fault_msg = InjectFault()
             fault_msg.frame_id = sensor_frame
@@ -127,6 +154,8 @@ class FaultInjectorNode(object):
         print 'Faulty sensors: ', self.faulty_sensor_frames
 
     def repair_all_sensors(self):
+        '''Repairs all sensors by sending appropriate 'InjectFault' commands.
+        '''
         for sensor_frame in self.faulty_sensor_frames:
             fault_msg = InjectFault()
             fault_msg.frame_id = sensor_frame
